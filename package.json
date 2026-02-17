@@ -1,6 +1,94 @@
 {
   "name": "tokensmith",
-  "version": "0.0.1",
+  "version": "0.1.0",
+  "description": "Framework-agnostic JWT token management — storage, auto-refresh, cross-tab sync, and reactive auth state",
   "license": "MIT",
-  "main": "index.js"
+  "keywords": [
+    "jwt",
+    "token",
+    "auth",
+    "authentication",
+    "session",
+    "react",
+    "refresh-token",
+    "oauth",
+    "access-token",
+    "token-management"
+  ],
+  "type": "module",
+  "exports": {
+    ".": {
+      "import": {
+        "types": "./dist/index.d.mts",
+        "default": "./dist/index.mjs"
+      },
+      "require": {
+        "types": "./dist/index.d.cts",
+        "default": "./dist/index.cjs"
+      }
+    },
+    "./react": {
+      "import": {
+        "types": "./dist/react.d.mts",
+        "default": "./dist/react.mjs"
+      },
+      "require": {
+        "types": "./dist/react.d.cts",
+        "default": "./dist/react.cjs"
+      }
+    },
+    "./package.json": "./package.json"
+  },
+  "main": "./dist/index.cjs",
+  "module": "./dist/index.mjs",
+  "types": "./dist/index.d.mts",
+  "files": [
+    "dist"
+  ],
+  "sideEffects": false,
+  "peerDependencies": {
+    "react": ">=18.0.0",
+    "@types/react": ">=18.0.0"
+  },
+  "peerDependenciesMeta": {
+    "react": {
+      "optional": true
+    },
+    "@types/react": {
+      "optional": true
+    }
+  },
+  "author": "aqib-io",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/aqib-io/tokensmith.git"
+  },
+  "homepage": "https://github.com/aqib-io/tokensmith#readme",
+  "bugs": {
+    "url": "https://github.com/aqib-io/tokensmith/issues"
+  },
+  "engines": {
+    "node": ">=18"
+  },
+  "devDependencies": {
+    "@biomejs/biome": "2.4.2",
+    "@testing-library/react": "^16.3.2",
+    "@types/react": "^19.2.14",
+    "jsdom": "^28.1.0",
+    "react": "^19.2.4",
+    "react-dom": "^19.2.4",
+    "tsup": "^8.5.1",
+    "typescript": "~5.9.3",
+    "vitest": "^4.0.18"
+  },
+  "scripts": {
+    "build": "tsup",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "typecheck": "tsc --noEmit",
+    "lint": "biome check src/",
+    "lint:fix": "biome check --write src/",
+    "format": "biome format --write src/",
+    "prepublishOnly": "npm run build"
+  }
 }
