@@ -1,0 +1,230 @@
+import type { RefreshFailedError } from './errors';
+import { decodeJwt } from './jwt/decode';
+import { isTokenExpired } from './jwt/validate';
+import { RefreshManager } from './refresh';
+import { createStorage } from './storage';
+import { CookieStorageAdapter } from './storage/cookie';
+import { TabSyncManager } from './sync';
+import type { SyncEvent } from './sync/types';
+import type {
+  AuthState,
+  AuthStateListener,
+  StorageAdapter,
+  TokenManager,
+  TokenManagerConfig,
+  TokenPair,
+} from './types';
+
+const ACCESS_KEY = 'tk_access';
+const REFRESH_KEY = 'tk_refresh';
+
+export class TokenManagerImpl<TUser = Record<string, unknown>>
+  implements TokenManager<TUser>
+{
+  private readonly config: TokenManagerConfig;
+  private readonly storage: StorageAdapter;
+  private readonly refreshManager: RefreshManager | null;
+  private readonly syncManager: TabSyncManager | null;
+  private readonly listeners: Set<AuthStateListener<TUser>>;
+  private state: AuthState<TUser>;
+  private visibilityHandler: (() => void) | null = null;
+
+  constructor(config: TokenManagerConfig) {
+    this.config = config;
+    this.storage = createStorage(config);
+    this.listeners = new Set();
+    this.refreshManager = config.refresh
+      ? new RefreshManager(
+          config.refresh,
+          this.storage,
+          (tokens) => this.applyRefreshedTokens(tokens),
+          (error) => this.handleRefreshFailure(error)
+        )
+      : null;
+
+    this.state = this.computeState();
+
+    const accessToken = this.storage.get(ACCESS_KEY);
+    if (
+      accessToken !== null &&
+      this.refreshManager !== null &&
+      !isTokenExpired(accessToken)
+    ) {
+      this.refreshManager.scheduleRefresh(accessToken);
+    }
+
+    const shouldSync = config.syncTabs !== false && config.storage !== 'memory';
+    this.syncManager = shouldSync
+      ? new TabSyncManager('tokensmith', (event) => this.handleSyncEvent(event))
+      : null;
+    this.syncManager?.start();
+
+    if (typeof document !== 'undefined') {
+      this.visibilityHandler = () => {
+        if (document.visibilityState === 'visible') {
+          const token = this.storage.get(ACCESS_KEY);
+          if (
+            token !== null &&
+            isTokenExpired(token) &&
+            this.refreshManager !== null
+          ) {
+            this.refreshManager.forceRefresh().catch(() => {});
+          }
+          this.updateState();
+        }
+      };
+      document.addEventListener('visibilitychange', this.visibilityHandler);
+    }
+  }
+
+  setTokens(tokens: TokenPair): void {
+    this.storeTokens(tokens);
+    this.syncManager?.broadcast({ type: 'TOKEN_SET' });
+  }
+
+  async getAccessToken(): Promise<string | null> {
+    const token = this.storage.get(ACCESS_KEY);
+    if (token === null) return null;
+    if (!isTokenExpired(token)) return token;
+    if (this.refreshManager !== null) {
+      const newTokens = await this.refreshManager.forceRefresh();
+      return newTokens.accessToken;
+    }
+    return null;
+  }
+
+  getUser(): TUser | null {
+    const token = this.storage.get(ACCESS_KEY);
+    if (token === null || isTokenExpired(token)) return null;
+    return decodeJwt<TUser>(token);
+  }
+
+  isAuthenticated(): boolean {
+    const token = this.storage.get(ACCESS_KEY);
+    return token !== null && !isTokenExpired(token);
+  }
+
+  onAuthChange(listener: AuthStateListener<TUser>): () => void {
+    this.listeners.add(listener);
+    return () => {
+      this.listeners.delete(listener);
+    };
+  }
+
+  getState(): AuthState<TUser> {
+    return this.state;
+  }
+
+  logout(): void {
+    this.refreshManager?.cancelSchedule();
+    this.storage.clear();
+    this.syncManager?.broadcast({ type: 'TOKEN_CLEARED' });
+    this.updateState();
+  }
+
+  fromCookieHeader(cookieHeader: string): TokenPair | null {
+    if (this.storage instanceof CookieStorageAdapter) {
+      return this.storage.fromCookieHeader(cookieHeader);
+    }
+    return null;
+  }
+
+  createAuthFetch(): (
+    input: RequestInfo | URL,
+    init?: RequestInit
+  ) => Promise<Response> {
+    return async (input, init) => {
+      const authHeader = await this.getAuthHeader();
+      const headers = new Headers(init?.headers);
+      for (const [key, value] of Object.entries(authHeader)) {
+        headers.set(key, value);
+      }
+
+      const response = await fetch(input, { ...init, headers });
+
+      if (response.status === 401 && this.refreshManager !== null) {
+        try {
+          await this.refreshManager.forceRefresh();
+          const newAuthHeader = await this.getAuthHeader();
+          const retryHeaders = new Headers(init?.headers);
+          for (const [key, value] of Object.entries(newAuthHeader)) {
+            retryHeaders.set(key, value);
+          }
+          return fetch(input, { ...init, headers: retryHeaders });
+        } catch {
+          return response;
+        }
+      }
+
+      return response;
+    };
+  }
+
+  async getAuthHeader(): Promise<
+    { Authorization: string } | Record<string, never>
+  > {
+    const token = await this.getAccessToken();
+    if (token === null) return {};
+    return { Authorization: `Bearer ${token}` };
+  }
+
+  destroy(): void {
+    this.refreshManager?.destroy();
+    this.syncManager?.destroy();
+    this.listeners.clear();
+    if (this.visibilityHandler !== null) {
+      document.removeEventListener('visibilitychange', this.visibilityHandler);
+      this.visibilityHandler = null;
+    }
+  }
+
+  private storeTokens(tokens: TokenPair): void {
+    this.storage.set(ACCESS_KEY, tokens.accessToken);
+    if (tokens.refreshToken !== undefined) {
+      this.storage.set(REFRESH_KEY, tokens.refreshToken);
+    }
+    this.refreshManager?.scheduleRefresh(tokens.accessToken);
+    this.updateState();
+  }
+
+  private computeState(): AuthState<TUser> {
+    const token = this.storage.get(ACCESS_KEY);
+    const isAuth = token !== null && !isTokenExpired(token);
+    return {
+      isAuthenticated: isAuth,
+      user: isAuth ? decodeJwt<TUser>(token) : null,
+      accessToken: isAuth ? token : null,
+      isRefreshing: this.refreshManager?.queue.isExecuting ?? false,
+      error: null,
+    };
+  }
+
+  private updateState(): void {
+    const newState = this.computeState();
+    this.state = newState;
+    for (const listener of this.listeners) {
+      listener(newState);
+    }
+  }
+
+  private applyRefreshedTokens(tokens: TokenPair): void {
+    this.storeTokens(tokens);
+    this.syncManager?.broadcast({ type: 'TOKEN_REFRESHED' });
+  }
+
+  private handleRefreshFailure(error: RefreshFailedError): void {
+    this.state = { ...this.state, error, isRefreshing: false };
+    for (const listener of this.listeners) {
+      listener(this.state);
+    }
+    this.config.onAuthFailure?.();
+  }
+
+  private handleSyncEvent(event: SyncEvent): void {
+    if (event.type === 'TOKEN_CLEARED') {
+      this.refreshManager?.cancelSchedule();
+      this.storage.clear();
+    }
+    this.updateState();
+  }
+}
