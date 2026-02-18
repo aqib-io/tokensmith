@@ -1,19 +1,21 @@
 import type { StorageAdapter } from '../types';
 
 export class MemoryStorageAdapter implements StorageAdapter {
-  get(_key: string): string | null {
-    throw new Error('MemoryStorageAdapter: not implemented');
+  private readonly store = new Map<string, string>();
+
+  get(key: string): string | null {
+    return this.store.get(key) ?? null;
   }
 
-  set(_key: string, _value: string): void {
-    throw new Error('MemoryStorageAdapter: not implemented');
+  set(key: string, value: string): void {
+    this.store.set(key, value);
   }
 
-  remove(_key: string): void {
-    throw new Error('MemoryStorageAdapter: not implemented');
+  remove(key: string): void {
+    this.store.delete(key);
   }
 
   clear(): void {
-    throw new Error('MemoryStorageAdapter: not implemented');
+    this.store.clear();
   }
 }
