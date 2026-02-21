@@ -1,4 +1,5 @@
 import { createTokenManager } from "@/core";
+import { RefreshFailedError } from "@/core/errors";
 import { MemoryStorageAdapter } from "@/core/storage/memory";
 import { createTestJwt } from "../helpers/create-test-jwt";
 import type { TokenPair } from "@/core/types";
@@ -116,6 +117,19 @@ describe("TokenManager", () => {
       const auth = createTokenManager({ storage });
 
       expect(await auth.getAccessToken()).toBeNull();
+      auth.destroy();
+    });
+
+    it("getAccessToken rejects with RefreshFailedError when token is expired and refresh fails", async () => {
+      const storage = new MemoryStorageAdapter();
+      storage.set("tk_access", createTestJwt({}, -1));
+      // no tk_refresh stored — forceRefresh will throw immediately
+      const auth = createTokenManager({
+        storage,
+        refresh: { endpoint: "/api/refresh" },
+      });
+
+      await expect(auth.getAccessToken()).rejects.toThrow(RefreshFailedError);
       auth.destroy();
     });
   });

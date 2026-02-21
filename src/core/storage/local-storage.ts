@@ -36,16 +36,21 @@ export class LocalStorageAdapter implements StorageAdapter {
   }
 
   clear(): void {
-    const storage = resolveLocalStorage();
-    const keysToRemove: string[] = [];
-    for (let i = 0; i < storage.length; i++) {
-      const key = storage.key(i);
-      if (key?.startsWith(TS_KEY_PREFIX)) {
-        keysToRemove.push(key);
+    try {
+      const storage = resolveLocalStorage();
+      const keysToRemove: string[] = [];
+      for (let i = 0; i < storage.length; i++) {
+        const key = storage.key(i);
+        if (key?.startsWith(TS_KEY_PREFIX)) {
+          keysToRemove.push(key);
+        }
       }
-    }
-    for (const key of keysToRemove) {
-      storage.removeItem(key);
+      for (const key of keysToRemove) {
+        storage.removeItem(key);
+      }
+    } catch (err) {
+      if (err instanceof StorageError) throw err;
+      throw new StorageError('localStorage clear failed');
     }
   }
 }

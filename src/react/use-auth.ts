@@ -12,8 +12,13 @@ export function useAuth<
 
   const typedManager = manager as TokenManager<TUser>;
 
+  const subscribe = useCallback(
+    (callback: () => void) => typedManager.onAuthChange(() => callback()),
+    [typedManager]
+  );
+
   const state = useSyncExternalStore(
-    (callback) => typedManager.onAuthChange(() => callback()),
+    subscribe,
     () => typedManager.getState(),
     () => typedManager.getState()
   );

@@ -2,7 +2,8 @@ import { StorageError } from '../errors';
 import { decodeJwt } from '../jwt/decode';
 import type { CookieConfig, StorageAdapter, TokenPair } from '../types';
 
-const DEFAULT_PREFIX = 'tk';
+const ACCESS_KEY = 'tk_access';
+const REFRESH_KEY = 'tk_refresh';
 const DEFAULT_PATH = '/';
 const DEFAULT_SAME_SITE = 'strict' as const;
 
@@ -117,17 +118,15 @@ export class CookieStorageAdapter implements StorageAdapter {
   }
 
   clear(): void {
-    const prefix = this.config.prefix ?? DEFAULT_PREFIX;
-    this.remove(`${prefix}_access`);
-    this.remove(`${prefix}_refresh`);
+    this.remove(ACCESS_KEY);
+    this.remove(REFRESH_KEY);
   }
 
   fromCookieHeader(cookieHeader: string): TokenPair | null {
-    const prefix = this.config.prefix ?? DEFAULT_PREFIX;
     const cookies = parseCookieString(cookieHeader);
-    const accessToken = cookies[`${prefix}_access`];
+    const accessToken = cookies[ACCESS_KEY];
     if (!accessToken) return null;
-    const refreshToken = cookies[`${prefix}_refresh`];
+    const refreshToken = cookies[REFRESH_KEY];
     return {
       accessToken,
       ...(refreshToken !== undefined && { refreshToken }),

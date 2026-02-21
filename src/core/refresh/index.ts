@@ -1,4 +1,4 @@
-import { RefreshFailedError } from '../errors';
+import { NetworkError, RefreshFailedError } from '../errors';
 import { getTimeUntilExpiry } from '../jwt/validate';
 import type { RefreshConfig, StorageAdapter, TokenPair } from '../types';
 import { PromiseQueue } from './queue';
@@ -108,13 +108,18 @@ export class RefreshManager {
     });
 
     if (!response.ok) {
-      throw new RefreshFailedError(
-        `Refresh request failed with status ${response.status}`,
-        0
+      throw new NetworkError(
+        `Refresh request failed with status ${response.status}`
       );
     }
 
-    return (await response.json()) as TokenPair;
+    const result = (await response.json()) as Record<string, unknown>;
+    if (typeof result.accessToken !== 'string' || !result.accessToken) {
+      throw new NetworkError(
+        'Invalid refresh response: missing or empty accessToken'
+      );
+    }
+    return result as unknown as TokenPair;
   }
 
   private waitForOnline(): Promise<void> {

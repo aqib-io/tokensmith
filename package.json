@@ -47,14 +47,10 @@
   ],
   "sideEffects": false,
   "peerDependencies": {
-    "react": ">=18.0.0",
-    "@types/react": ">=18.0.0"
+    "react": ">=18.0.0"
   },
   "peerDependenciesMeta": {
     "react": {
-      "optional": true
-    },
-    "@types/react": {
       "optional": true
     }
   },
@@ -84,11 +80,12 @@
   "scripts": {
     "build": "tsup",
     "test": "vitest run",
+    "test:coverage": "vitest run --coverage",
     "test:watch": "vitest",
     "typecheck": "tsc --noEmit",
     "lint": "biome check src/",
     "lint:fix": "biome check --write src/",
     "format": "biome format --write src/",
-    "prepublishOnly": "npm run build"
+    "prepublishOnly": "npm run typecheck && npm run lint && npm run test && npm run build"
   }
 }

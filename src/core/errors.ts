@@ -10,6 +10,11 @@ export class InvalidTokenError extends TokenSmithError {
   }
 }
 
+/**
+ * Thrown when a token is expired. Not thrown by TokenSmith internally —
+ * available for consumers to throw in custom refresh handlers or storage
+ * adapters when they detect an expired token.
+ */
 export class TokenExpiredError extends TokenSmithError {
   override readonly code = 'TOKEN_EXPIRED';
 

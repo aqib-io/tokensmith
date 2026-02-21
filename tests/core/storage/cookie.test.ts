@@ -91,12 +91,6 @@ describe("CookieStorageAdapter", () => {
     expect(writes[0]).toContain("Secure");
   });
 
-  it("uses custom prefix for cookie names", () => {
-    const adapter = new CookieStorageAdapter({ prefix: "myapp" });
-    adapter.set("myapp_access", "token-value");
-    expect(adapter.get("myapp_access")).toBe("token-value");
-  });
-
   it("fromCookieHeader parses access token from a raw header string", () => {
     const adapter = new CookieStorageAdapter();
     const result = adapter.fromCookieHeader("tk_access=my-access-token");

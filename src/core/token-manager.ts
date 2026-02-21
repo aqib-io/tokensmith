@@ -47,8 +47,8 @@ export class TokenManagerImpl<TUser = Record<string, unknown>>
     const accessToken = this.storage.get(ACCESS_KEY);
     if (
       accessToken !== null &&
-      this.refreshManager !== null &&
-      !isTokenExpired(accessToken)
+      this.isTokenValid(accessToken) &&
+      this.refreshManager !== null
     ) {
       this.refreshManager.scheduleRefresh(accessToken);
     }
@@ -65,7 +65,7 @@ export class TokenManagerImpl<TUser = Record<string, unknown>>
           const token = this.storage.get(ACCESS_KEY);
           if (
             token !== null &&
-            isTokenExpired(token) &&
+            !this.isTokenValid(token) &&
             this.refreshManager !== null
           ) {
             this.refreshManager.forceRefresh().catch(() => {});
@@ -85,7 +85,7 @@ export class TokenManagerImpl<TUser = Record<string, unknown>>
   async getAccessToken(): Promise<string | null> {
     const token = this.storage.get(ACCESS_KEY);
     if (token === null) return null;
-    if (!isTokenExpired(token)) return token;
+    if (this.isTokenValid(token)) return token;
     if (this.refreshManager !== null) {
       const newTokens = await this.refreshManager.forceRefresh();
       return newTokens.accessToken;
@@ -95,13 +95,12 @@ export class TokenManagerImpl<TUser = Record<string, unknown>>
 
   getUser(): TUser | null {
     const token = this.storage.get(ACCESS_KEY);
-    if (token === null || isTokenExpired(token)) return null;
-    return decodeJwt<TUser>(token);
+    if (!this.isTokenValid(token)) return null;
+    return this.safeDecodeUser(token);
   }
 
   isAuthenticated(): boolean {
-    const token = this.storage.get(ACCESS_KEY);
-    return token !== null && !isTokenExpired(token);
+    return this.isTokenValid(this.storage.get(ACCESS_KEY));
   }
 
   onAuthChange(listener: AuthStateListener<TUser>): () => void {
@@ -178,6 +177,24 @@ export class TokenManagerImpl<TUser = Record<string, unknown>>
     }
   }
 
+  private isTokenValid(token: string | null): boolean {
+    if (token === null) return false;
+    try {
+      return !isTokenExpired(token);
+    } catch {
+      return false;
+    }
+  }
+
+  private safeDecodeUser(token: string | null): TUser | null {
+    if (token === null) return null;
+    try {
+      return decodeJwt<TUser>(token);
+    } catch {
+      return null;
+    }
+  }
+
   private storeTokens(tokens: TokenPair): void {
     this.storage.set(ACCESS_KEY, tokens.accessToken);
     if (tokens.refreshToken !== undefined) {
@@ -189,10 +206,10 @@ export class TokenManagerImpl<TUser = Record<string, unknown>>
 
   private computeState(): AuthState<TUser> {
     const token = this.storage.get(ACCESS_KEY);
-    const isAuth = token !== null && !isTokenExpired(token);
+    const isAuth = this.isTokenValid(token);
     return {
       isAuthenticated: isAuth,
-      user: isAuth ? decodeJwt<TUser>(token) : null,
+      user: isAuth ? this.safeDecodeUser(token) : null,
       accessToken: isAuth ? token : null,
       isRefreshing: this.refreshManager?.queue.isExecuting ?? false,
       error: null,

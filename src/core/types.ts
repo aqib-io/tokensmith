@@ -38,7 +38,6 @@ export interface CookieConfig {
   domain?: string;
   sameSite?: 'strict' | 'lax' | 'none';
   secure?: boolean;
-  prefix?: string;
   maxAge?: number | 'auto';
 }
 
