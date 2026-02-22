@@ -1,0 +1,106 @@
+<svg width="1200" height="220" viewBox="0 0 1200 220" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="bgGrad" x1="0" y1="0" x2="1200" y2="220" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#0d1117"/>
+      <stop offset="100%" stop-color="#161b22"/>
+    </linearGradient>
+    <linearGradient id="accentLine" x1="0" y1="0" x2="1200" y2="0" gradientUnits="userSpaceOnUse">
+      <stop offset="0%"   stop-color="#3b82f6" stop-opacity="0"/>
+      <stop offset="20%"  stop-color="#3b82f6"/>
+      <stop offset="65%"  stop-color="#8b5cf6"/>
+      <stop offset="100%" stop-color="#06b6d4" stop-opacity="0"/>
+    </linearGradient>
+    <linearGradient id="shieldGrad" x1="0" y1="0" x2="0" y2="1" gradientUnits="objectBoundingBox">
+      <stop offset="0%"   stop-color="#3b82f6"/>
+      <stop offset="100%" stop-color="#7c3aed"/>
+    </linearGradient>
+    <linearGradient id="titleGrad" x1="278" y1="0" x2="640" y2="0" gradientUnits="userSpaceOnUse">
+      <stop offset="0%"   stop-color="#f0f6fc"/>
+      <stop offset="100%" stop-color="#c9d1d9"/>
+    </linearGradient>
+    <pattern id="dots" x="0" y="0" width="20" height="20" patternUnits="userSpaceOnUse">
+      <circle cx="10" cy="10" r="0.7" fill="#ffffff" fill-opacity="0.05"/>
+    </pattern>
+    <clipPath id="card">
+      <rect width="1200" height="220" rx="12"/>
+    </clipPath>
+  </defs>
+
+  <g clip-path="url(#card)">
+    <!-- Background -->
+    <rect width="1200" height="220" fill="url(#bgGrad)"/>
+    <rect width="1200" height="220" fill="url(#dots)"/>
+
+    <!-- Ambient glows -->
+    <ellipse cx="155" cy="110" rx="110" ry="90"  fill="#3b82f6" fill-opacity="0.06"/>
+    <ellipse cx="1100" cy="80" rx="160" ry="130" fill="#7c3aed" fill-opacity="0.05"/>
+
+    <!-- Shield + lock icon, centered at ~(155, 109) -->
+    <g transform="translate(123, 66) scale(1.1)">
+      <!-- Shield body -->
+      <path d="M30 2 C30 2 58 14 58 40 C58 60 44 72 30 76 C16 72 2 60 2 40 C2 14 30 2 30 2 Z"
+            fill="url(#shieldGrad)"/>
+      <!-- Lock body -->
+      <rect x="16" y="42" width="28" height="22" rx="3.5" fill="#0d1117"/>
+      <!-- Shackle arc -->
+      <path d="M20 43 L20 32 C20 20 40 20 40 32 L40 43"
+            stroke="#0d1117" stroke-width="4.5" stroke-linecap="round" fill="none"/>
+      <!-- Keyhole -->
+      <circle cx="30" cy="52" r="4"   fill="#3b82f6"/>
+      <rect   x="28"  y="54" width="4" height="5" rx="1" fill="#3b82f6"/>
+    </g>
+
+    <!-- Vertical divider -->
+    <line x1="248" y1="60" x2="248" y2="158" stroke="#30363d" stroke-width="1"/>
+
+    <!-- Title -->
+    <text x="278" y="116"
+          font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif"
+          font-size="60" font-weight="800" letter-spacing="-1.5"
+          fill="url(#titleGrad)">TokenSmith</text>
+
+    <!-- Tagline -->
+    <text x="280" y="149"
+          font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif"
+          font-size="17" fill="#8b949e" letter-spacing="0.2">Framework-agnostic JWT token management — zero deps, auto-refresh, cross-tab sync</text>
+
+    <!-- Feature pills -->
+    <g transform="translate(280, 165)">
+      <!-- zero deps -->
+      <rect x="0"   width="80" height="20" rx="10" fill="#161b22" stroke="#30363d" stroke-width="1"/>
+      <text x="40"  y="14" text-anchor="middle"
+            font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif"
+            font-size="10.5" fill="#6e7681">zero deps</text>
+
+      <!-- TypeScript -->
+      <rect x="88"  width="84" height="20" rx="10" fill="#161b22" stroke="#30363d" stroke-width="1"/>
+      <text x="130" y="14" text-anchor="middle"
+            font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif"
+            font-size="10.5" fill="#3b82f6">TypeScript</text>
+
+      <!-- React ready -->
+      <rect x="180" width="86" height="20" rx="10" fill="#161b22" stroke="#30363d" stroke-width="1"/>
+      <text x="223" y="14" text-anchor="middle"
+            font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif"
+            font-size="10.5" fill="#58a6ff">React ready</text>
+
+      <!-- SSR safe -->
+      <rect x="274" width="72" height="20" rx="10" fill="#161b22" stroke="#30363d" stroke-width="1"/>
+      <text x="310" y="14" text-anchor="middle"
+            font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif"
+            font-size="10.5" fill="#6e7681">SSR safe</text>
+
+      <!-- ~5 KB gzip -->
+      <rect x="354" width="80" height="20" rx="10" fill="#161b22" stroke="#30363d" stroke-width="1"/>
+      <text x="394" y="14" text-anchor="middle"
+            font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif"
+            font-size="10.5" fill="#6e7681">~5 KB gzip</text>
+    </g>
+
+    <!-- Top accent line -->
+    <rect x="0" y="0" width="1200" height="3" fill="url(#accentLine)"/>
+
+    <!-- Card border -->
+    <rect width="1200" height="220" rx="12" stroke="#21262d" stroke-width="1.5"/>
+  </g>
+</svg>
