@@ -128,6 +128,30 @@ describe("RefreshManager", () => {
       await expect(manager.forceRefresh()).rejects.toThrow(RefreshFailedError);
       manager.destroy();
     });
+
+    it("rejects with NetworkError when the server returns a non-string refreshToken", async () => {
+      const storage = new MemoryStorageAdapter();
+      storage.set("tk_refresh", "rt");
+      vi.stubGlobal(
+        "fetch",
+        vi.fn().mockResolvedValue({
+          ok: true,
+          json: vi.fn().mockResolvedValue({ accessToken: "at", refreshToken: 999 }),
+        }),
+      );
+      const manager = new RefreshManager(
+        { endpoint: "/api/refresh", maxRetries: 0 },
+        storage,
+        vi.fn(),
+        vi.fn(),
+      );
+
+      await expect(manager.forceRefresh()).rejects.toMatchObject({
+        code: "REFRESH_FAILED",
+        message: "Invalid refresh response: refreshToken must be a string",
+      });
+      manager.destroy();
+    });
   });
 
   describe("forceRefresh — error guards", () => {

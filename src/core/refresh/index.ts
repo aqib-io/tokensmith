@@ -130,7 +130,20 @@ export class RefreshManager {
         'Invalid refresh response: missing or empty accessToken'
       );
     }
-    return result as unknown as TokenPair;
+    if (
+      result.refreshToken !== undefined &&
+      typeof result.refreshToken !== 'string'
+    ) {
+      throw new NetworkError(
+        'Invalid refresh response: refreshToken must be a string'
+      );
+    }
+    return {
+      accessToken: result.accessToken,
+      ...(typeof result.refreshToken === 'string' && {
+        refreshToken: result.refreshToken,
+      }),
+    };
   }
 
   private waitForOnline(): Promise<void> {
