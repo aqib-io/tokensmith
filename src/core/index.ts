@@ -13,6 +13,7 @@ export {
   RefreshFailedError,
   StorageError,
   TokenExpiredError,
+  TokenSmithError,
 } from './errors';
 export type {
   AuthState,
@@ -25,4 +26,3 @@ export type {
   TokenManagerConfig,
   TokenPair,
 } from './types';
-export { TokenSmithError } from './types';

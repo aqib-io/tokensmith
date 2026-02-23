@@ -1,4 +1,13 @@
-import { TokenSmithError } from './types';
+export class TokenSmithError extends Error {
+  readonly code: string;
+
+  constructor(message: string, code: string) {
+    super(message);
+    this.name = 'TokenSmithError';
+    this.code = code;
+    Object.setPrototypeOf(this, new.target.prototype);
+  }
+}
 
 export class InvalidTokenError extends TokenSmithError {
   override readonly code = 'INVALID_TOKEN';

@@ -1,3 +1,7 @@
+import type { TokenSmithError } from './errors';
+
+export type { TokenSmithError };
+
 export interface StorageAdapter {
   get(key: string): string | null;
   set(key: string, value: string): void;
@@ -6,17 +10,6 @@ export interface StorageAdapter {
 }
 
 export type StorageType = 'cookie' | 'memory' | 'localStorage';
-
-export class TokenSmithError extends Error {
-  readonly code: string;
-
-  constructor(message: string, code: string) {
-    super(message);
-    this.name = 'TokenSmithError';
-    this.code = code;
-    Object.setPrototypeOf(this, new.target.prototype);
-  }
-}
 
 export interface TokenPair {
   accessToken: string;
