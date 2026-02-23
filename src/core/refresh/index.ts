@@ -60,14 +60,18 @@ export class RefreshManager {
   private async attemptRefreshWithRetry(): Promise<TokenPair> {
     const refreshToken = this.storage.get('tk_refresh');
     if (refreshToken === null) {
-      throw new RefreshFailedError('No refresh token available', 0);
+      const error = new RefreshFailedError('No refresh token available', 0);
+      this.onFailure(error);
+      throw error;
     }
 
     if (!this.config.handler && !this.config.endpoint) {
-      throw new RefreshFailedError(
+      const error = new RefreshFailedError(
         'No refresh endpoint or handler configured',
         0
       );
+      this.onFailure(error);
+      throw error;
     }
 
     const maxRetries = this.config.maxRetries ?? DEFAULT_MAX_RETRIES;

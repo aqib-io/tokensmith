@@ -486,5 +486,21 @@ describe("TokenManager", () => {
       expect(auth.getState().error).toBeInstanceOf(RefreshFailedError);
       auth.destroy();
     });
+
+    it("calls onAuthFailure when no refresh token is stored", async () => {
+      const onAuthFailure = vi.fn();
+      const storage = new MemoryStorageAdapter();
+      storage.set("tk_access", createTestJwt({}, -1));
+      const auth = createTokenManager({
+        storage,
+        refresh: { endpoint: "/api/refresh" },
+        onAuthFailure,
+      });
+
+      await auth.getAccessToken().catch(() => {});
+
+      expect(onAuthFailure).toHaveBeenCalledOnce();
+      auth.destroy();
+    });
   });
 });
