@@ -217,6 +217,15 @@ export class TokenManagerImpl<TUser = Record<string, unknown>>
 
   private updateState(): void {
     const newState = this.computeState();
+    const s = this.state;
+    if (
+      s.isAuthenticated === newState.isAuthenticated &&
+      s.accessToken === newState.accessToken &&
+      s.isRefreshing === newState.isRefreshing &&
+      s.error === newState.error
+    ) {
+      return;
+    }
     this.state = newState;
     for (const listener of this.listeners) {
       listener(newState);

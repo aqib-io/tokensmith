@@ -447,6 +447,30 @@ describe("TokenManager", () => {
     });
   });
 
+  describe("updateState shallow equality", () => {
+    it("does not notify listeners when logout is called on an already-unauthenticated manager", () => {
+      const auth = createTokenManager({ storage: "memory" });
+      const listener = vi.fn();
+      auth.onAuthChange(listener);
+      auth.logout();
+      expect(listener).not.toHaveBeenCalled();
+      auth.destroy();
+    });
+
+    it("does not notify listeners on the second logout when state is already unauthenticated", () => {
+      const auth = createTokenManager({ storage: "memory" });
+      auth.setTokens({ accessToken: createTestJwt() });
+      const listener = vi.fn();
+      auth.onAuthChange(listener);
+      auth.logout();
+      expect(listener).toHaveBeenCalledOnce();
+      listener.mockClear();
+      auth.logout();
+      expect(listener).not.toHaveBeenCalled();
+      auth.destroy();
+    });
+  });
+
   describe("onAuthFailure callback", () => {
     it("calls onAuthFailure when all refresh retries are exhausted", async () => {
       const onAuthFailure = vi.fn();
