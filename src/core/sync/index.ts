@@ -3,7 +3,16 @@ import type { SyncEvent } from './types';
 
 function parseSyncEvent(value: string): SyncEvent | null {
   try {
-    return JSON.parse(value) as SyncEvent;
+    const parsed: unknown = JSON.parse(value);
+    if (
+      parsed !== null &&
+      typeof parsed === 'object' &&
+      'type' in parsed &&
+      typeof (parsed as Record<string, unknown>).type === 'string'
+    ) {
+      return parsed as SyncEvent;
+    }
+    return null;
   } catch {
     return null;
   }

@@ -119,6 +119,36 @@ describe("TabSyncManager", () => {
       expect(onSync).not.toHaveBeenCalled();
     });
 
+    it("ignores storage events with valid JSON but no type field", () => {
+      const onSync = vi.fn();
+      const manager = new TabSyncManager("tokensmith", onSync);
+      manager.start();
+
+      window.dispatchEvent(
+        new StorageEvent("storage", {
+          key: "tk_sync",
+          newValue: JSON.stringify({ notAType: "TOKEN_SET" }),
+        }),
+      );
+
+      expect(onSync).not.toHaveBeenCalled();
+    });
+
+    it("ignores storage events with a non-string type field", () => {
+      const onSync = vi.fn();
+      const manager = new TabSyncManager("tokensmith", onSync);
+      manager.start();
+
+      window.dispatchEvent(
+        new StorageEvent("storage", {
+          key: "tk_sync",
+          newValue: JSON.stringify({ type: 42 }),
+        }),
+      );
+
+      expect(onSync).not.toHaveBeenCalled();
+    });
+
     it("broadcast cleans up the tk_sync key from localStorage after writing", () => {
       const manager = new TabSyncManager("tokensmith", vi.fn());
       manager.start();
