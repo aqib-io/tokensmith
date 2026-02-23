@@ -11,6 +11,7 @@ export class RefreshManager {
   readonly queue: PromiseQueue<TokenPair>;
   private timer: ReturnType<typeof setTimeout> | null = null;
   private onlineListener: (() => void) | null = null;
+  private onlineReject: (() => void) | null = null;
 
   constructor(
     private readonly config: RefreshConfig,
@@ -52,6 +53,8 @@ export class RefreshManager {
       window.removeEventListener('online', this.onlineListener);
       this.onlineListener = null;
     }
+    this.onlineReject?.();
+    this.onlineReject = null;
   }
 
   private async attemptRefreshWithRetry(): Promise<TokenPair> {
@@ -126,10 +129,13 @@ export class RefreshManager {
   }
 
   private waitForOnline(): Promise<void> {
-    return new Promise((resolve) => {
+    return new Promise((resolve, reject) => {
+      this.onlineReject = () =>
+        reject(new RefreshFailedError('Destroyed while waiting for online', 0));
       const handler = () => {
         window.removeEventListener('online', handler);
         this.onlineListener = null;
+        this.onlineReject = null;
         resolve();
       };
       this.onlineListener = handler;

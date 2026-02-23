@@ -328,6 +328,23 @@ describe("RefreshManager", () => {
   });
 
   describe("destroy", () => {
+    it("rejects forceRefresh when destroy is called while waiting for the online event", async () => {
+      const storage = new MemoryStorageAdapter();
+      storage.set("tk_refresh", "rt");
+      vi.stubGlobal("navigator", { onLine: false });
+      const manager = new RefreshManager(
+        { handler: vi.fn() },
+        storage,
+        vi.fn(),
+        vi.fn(),
+      );
+
+      const promise = manager.forceRefresh();
+      manager.destroy();
+
+      await expect(promise).rejects.toThrow(RefreshFailedError);
+    });
+
     it("cancels a pending scheduled timer so the refresh never fires", async () => {
       vi.useFakeTimers();
       vi.setSystemTime(new Date("2026-01-01T00:00:00.000Z"));
