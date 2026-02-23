@@ -465,5 +465,26 @@ describe("TokenManager", () => {
       expect(onAuthFailure).toHaveBeenCalledOnce();
       auth.destroy();
     });
+
+    it("getState reflects unauthenticated state with error set after refresh fails when token is expired", async () => {
+      const onAuthFailure = vi.fn();
+      const handler = vi.fn().mockRejectedValue(new Error("always fails"));
+      const storage = new MemoryStorageAdapter();
+      storage.set("tk_access", createTestJwt({}, -1));
+      storage.set("tk_refresh", "rt");
+      const auth = createTokenManager({
+        storage,
+        refresh: { handler, maxRetries: 0 },
+        onAuthFailure,
+      });
+
+      await auth.getAccessToken().catch(() => {});
+
+      expect(onAuthFailure).toHaveBeenCalledOnce();
+      expect(auth.getState().isAuthenticated).toBe(false);
+      expect(auth.getState().accessToken).toBeNull();
+      expect(auth.getState().error).toBeInstanceOf(RefreshFailedError);
+      auth.destroy();
+    });
   });
 });

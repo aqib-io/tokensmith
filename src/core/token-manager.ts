@@ -231,7 +231,8 @@ export class TokenManagerImpl<TUser = Record<string, unknown>>
   }
 
   private handleRefreshFailure(error: RefreshFailedError): void {
-    this.state = { ...this.state, error, isRefreshing: false };
+    const fresh = this.computeState();
+    this.state = { ...fresh, error, isRefreshing: false };
     for (const listener of this.listeners) {
       listener(this.state);
     }
