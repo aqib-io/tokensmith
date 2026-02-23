@@ -16,7 +16,8 @@ export class RefreshManager {
     private readonly config: RefreshConfig,
     private readonly storage: StorageAdapter,
     private readonly onRefresh: (tokens: TokenPair) => void,
-    private readonly onFailure: (error: RefreshFailedError) => void
+    private readonly onFailure: (error: RefreshFailedError) => void,
+    private readonly onSettled?: () => void
   ) {
     this.queue = new PromiseQueue<TokenPair>();
   }
@@ -28,7 +29,9 @@ export class RefreshManager {
     if (!Number.isFinite(timeUntilExpiry)) return;
     const delay = Math.max(0, (timeUntilExpiry - buffer) * 1000);
     this.timer = setTimeout(() => {
-      this.forceRefresh().catch(() => {});
+      this.forceRefresh()
+        .finally(() => this.onSettled?.())
+        .catch(() => {});
     }, delay);
   }
 

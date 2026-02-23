@@ -38,7 +38,8 @@ export class TokenManagerImpl<TUser = Record<string, unknown>>
           config.refresh,
           this.storage,
           (tokens) => this.applyRefreshedTokens(tokens),
-          (error) => this.handleRefreshFailure(error)
+          (error) => this.handleRefreshFailure(error),
+          () => this.updateState()
         )
       : null;
 

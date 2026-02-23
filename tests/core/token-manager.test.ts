@@ -381,6 +381,52 @@ describe("TokenManager", () => {
     });
   });
 
+  describe("timer-based auto-refresh", () => {
+    beforeEach(() => {
+      vi.useFakeTimers();
+      vi.setSystemTime(new Date("2026-01-01T00:00:00.000Z"));
+    });
+
+    afterEach(() => {
+      vi.useRealTimers();
+    });
+
+    it("getState().isRefreshing is false after a timer-triggered refresh succeeds", async () => {
+      const newToken = createTestJwt({}, 3600);
+      const handler = vi.fn().mockResolvedValueOnce({ accessToken: newToken });
+      const storage = new MemoryStorageAdapter();
+      const auth = createTokenManager({
+        storage,
+        refresh: { handler, buffer: 60 },
+      });
+
+      auth.setTokens({ accessToken: createTestJwt({}, 120), refreshToken: "rt" });
+
+      await vi.advanceTimersByTimeAsync(60_000);
+
+      expect(handler).toHaveBeenCalledTimes(1);
+      expect(auth.getState().isRefreshing).toBe(false);
+      auth.destroy();
+    });
+
+    it("getState().isRefreshing is false after a timer-triggered refresh fails", async () => {
+      const handler = vi.fn().mockRejectedValue(new Error("refresh failed"));
+      const storage = new MemoryStorageAdapter();
+      const auth = createTokenManager({
+        storage,
+        refresh: { handler, buffer: 60, maxRetries: 0 },
+      });
+
+      auth.setTokens({ accessToken: createTestJwt({}, 120), refreshToken: "rt" });
+
+      await vi.advanceTimersByTimeAsync(60_000);
+
+      expect(handler).toHaveBeenCalledTimes(1);
+      expect(auth.getState().isRefreshing).toBe(false);
+      auth.destroy();
+    });
+  });
+
   describe("onAuthFailure callback", () => {
     it("calls onAuthFailure when all refresh retries are exhausted", async () => {
       const onAuthFailure = vi.fn();
