@@ -75,12 +75,16 @@ function buildCookieString(
 }
 
 function buildRemoveCookieString(key: string, config: CookieConfig): string {
+  const sameSite = config.sameSite ?? DEFAULT_SAME_SITE;
+  const secure = resolveSecure(config, sameSite);
   const parts: string[] = [
     `${key}=`,
     `Path=${config.path ?? DEFAULT_PATH}`,
+    `SameSite=${capitalizeSameSite(sameSite)}`,
     'Max-Age=0',
   ];
   if (config.domain) parts.push(`Domain=${config.domain}`);
+  if (secure) parts.push('Secure');
   return parts.join('; ');
 }
 

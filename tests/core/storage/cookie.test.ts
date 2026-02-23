@@ -128,6 +128,34 @@ describe("CookieStorageAdapter", () => {
     }
   });
 
+  it("remove writes a cookie string containing SameSite=Strict by default", () => {
+    const { writes, restore } = captureCookieWrites();
+    const adapter = new CookieStorageAdapter();
+    adapter.set("tk_access", "token-value");
+    adapter.remove("tk_access");
+    restore();
+    expect(writes[1]).toContain("SameSite=Strict");
+  });
+
+  it("remove writes a cookie string containing Secure when config.secure is true", () => {
+    const { writes, restore } = captureCookieWrites();
+    const adapter = new CookieStorageAdapter({ secure: true });
+    adapter.set("tk_access", "token-value");
+    adapter.remove("tk_access");
+    restore();
+    expect(writes[1]).toContain("Secure");
+  });
+
+  it("remove writes a cookie string with SameSite=None and Secure when sameSite is none", () => {
+    const { writes, restore } = captureCookieWrites();
+    const adapter = new CookieStorageAdapter({ sameSite: "none" });
+    adapter.set("tk_access", "token-value");
+    adapter.remove("tk_access");
+    restore();
+    expect(writes[1]).toContain("SameSite=None");
+    expect(writes[1]).toContain("Secure");
+  });
+
   it("sets Max-Age derived from JWT exp when maxAge is auto", () => {
     const { writes, restore } = captureCookieWrites();
     const token = createTestJwt({}, 3600);
