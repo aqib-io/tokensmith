@@ -1,3 +1,4 @@
+import { REFRESH_KEY } from '../constants';
 import { NetworkError, RefreshFailedError } from '../errors';
 import { getTimeUntilExpiry } from '../jwt/validate';
 import type { RefreshConfig, StorageAdapter, TokenPair } from '../types';
@@ -58,7 +59,7 @@ export class RefreshManager {
   }
 
   private async attemptRefreshWithRetry(): Promise<TokenPair> {
-    const refreshToken = this.storage.get('tk_refresh');
+    const refreshToken = this.storage.get(REFRESH_KEY);
     if (refreshToken === null) {
       const error = new RefreshFailedError('No refresh token available', 0);
       this.onFailure(error);

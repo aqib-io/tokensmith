@@ -1,9 +1,8 @@
+import { ACCESS_KEY, REFRESH_KEY } from '../constants';
 import { StorageError } from '../errors';
 import { decodeJwt } from '../jwt/decode';
 import type { CookieConfig, StorageAdapter, TokenPair } from '../types';
 
-const ACCESS_KEY = 'tk_access';
-const REFRESH_KEY = 'tk_refresh';
 const DEFAULT_PATH = '/';
 const DEFAULT_SAME_SITE = 'strict' as const;
 

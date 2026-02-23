@@ -1,6 +1,5 @@
+import { SYNC_KEY } from '../constants';
 import type { SyncEvent } from './types';
-
-const SYNC_STORAGE_KEY = 'tk_sync';
 
 function parseSyncEvent(value: string): SyncEvent | null {
   try {
@@ -29,7 +28,7 @@ export class TabSyncManager {
       };
     } else {
       this.storageListener = (event: StorageEvent) => {
-        if (event.key !== SYNC_STORAGE_KEY || !event.newValue) return;
+        if (event.key !== SYNC_KEY || !event.newValue) return;
         const syncEvent = parseSyncEvent(event.newValue);
         if (syncEvent !== null) this.onSync(syncEvent);
       };
@@ -43,8 +42,8 @@ export class TabSyncManager {
       return;
     }
     if (typeof window === 'undefined') return;
-    localStorage.setItem(SYNC_STORAGE_KEY, JSON.stringify(event));
-    localStorage.removeItem(SYNC_STORAGE_KEY);
+    localStorage.setItem(SYNC_KEY, JSON.stringify(event));
+    localStorage.removeItem(SYNC_KEY);
   }
 
   destroy(): void {

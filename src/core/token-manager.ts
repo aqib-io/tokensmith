@@ -1,3 +1,4 @@
+import { ACCESS_KEY, REFRESH_KEY } from './constants';
 import type { RefreshFailedError } from './errors';
 import { decodeJwt } from './jwt/decode';
 import { isTokenExpired } from './jwt/validate';
@@ -14,9 +15,6 @@ import type {
   TokenManagerConfig,
   TokenPair,
 } from './types';
-
-const ACCESS_KEY = 'tk_access';
-const REFRESH_KEY = 'tk_refresh';
 
 export class TokenManagerImpl<TUser = Record<string, unknown>>
   implements TokenManager<TUser>
