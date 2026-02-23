@@ -242,6 +242,11 @@ export class TokenManagerImpl<TUser = Record<string, unknown>>
     if (event.type === 'TOKEN_CLEARED') {
       this.refreshManager?.cancelSchedule();
       this.storage.clear();
+    } else if (event.type === 'TOKEN_SET' || event.type === 'TOKEN_REFRESHED') {
+      const token = this.storage.get(ACCESS_KEY);
+      if (token !== null && this.isTokenValid(token)) {
+        this.refreshManager?.scheduleRefresh(token);
+      }
     }
     this.updateState();
   }

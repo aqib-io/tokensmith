@@ -425,6 +425,26 @@ describe("TokenManager", () => {
       expect(auth.getState().isRefreshing).toBe(false);
       auth.destroy();
     });
+
+    it("schedules a refresh timer on instance B after it receives TOKEN_SET from instance A sharing storage", async () => {
+      const sharedStorage = new MemoryStorageAdapter();
+      const newToken = createTestJwt({}, 3600);
+      const handlerB = vi.fn().mockResolvedValue({ accessToken: newToken });
+
+      const authA = createTokenManager({ storage: sharedStorage });
+      const authB = createTokenManager({
+        storage: sharedStorage,
+        refresh: { handler: handlerB, buffer: 60 },
+      });
+
+      authA.setTokens({ accessToken: createTestJwt({}, 120), refreshToken: "rt" });
+
+      await vi.advanceTimersByTimeAsync(60_000);
+
+      expect(handlerB).toHaveBeenCalledTimes(1);
+      authA.destroy();
+      authB.destroy();
+    });
   });
 
   describe("onAuthFailure callback", () => {
