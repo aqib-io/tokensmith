@@ -388,6 +388,33 @@ describe("RefreshManager", () => {
       await expect(promise).rejects.toThrow(RefreshFailedError);
     });
 
+    it("aborts in-flight fetch and does not call onRefresh when destroy is called during executeRefresh", async () => {
+      const storage = new MemoryStorageAdapter();
+      storage.set("tk_refresh", "rt");
+      const fetchMock = vi.fn().mockImplementation((_url: string, options: RequestInit) => {
+        return new Promise((_resolve, reject) => {
+          options.signal?.addEventListener("abort", () => {
+            reject(new DOMException("The operation was aborted.", "AbortError"));
+          });
+        });
+      });
+      vi.stubGlobal("fetch", fetchMock);
+      const onRefresh = vi.fn();
+      const manager = new RefreshManager(
+        { endpoint: "/api/refresh", maxRetries: 0 },
+        storage,
+        onRefresh,
+        vi.fn(),
+      );
+
+      const promise = manager.forceRefresh();
+      promise.catch(() => {});
+      manager.destroy();
+
+      await expect(promise).rejects.toThrow();
+      expect(onRefresh).not.toHaveBeenCalled();
+    });
+
     it("cancels a pending scheduled timer so the refresh never fires", async () => {
       vi.useFakeTimers();
       vi.setSystemTime(new Date("2026-01-01T00:00:00.000Z"));

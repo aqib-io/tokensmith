@@ -13,6 +13,7 @@ export class RefreshManager {
   private timer: ReturnType<typeof setTimeout> | null = null;
   private onlineListener: (() => void) | null = null;
   private onlineReject: (() => void) | null = null;
+  private controller: AbortController | null = null;
 
   constructor(
     private readonly config: RefreshConfig,
@@ -50,6 +51,7 @@ export class RefreshManager {
 
   destroy(): void {
     this.cancelSchedule();
+    this.controller?.abort();
     if (this.onlineListener !== null) {
       window.removeEventListener('online', this.onlineListener);
       this.onlineListener = null;
@@ -90,6 +92,8 @@ export class RefreshManager {
         return tokens;
       } catch (error) {
         if (error instanceof RefreshFailedError) throw error;
+        if (this.controller?.signal.aborted)
+          throw new RefreshFailedError('Refresh aborted', 0);
         lastError = error;
         if (attempt < maxRetries) {
           await this.sleep(retryDelay * 2 ** attempt);
@@ -109,6 +113,7 @@ export class RefreshManager {
       return this.config.handler(refreshToken);
     }
 
+    this.controller = new AbortController();
     const response = await fetch(this.config.endpoint!, {
       method: 'POST',
       headers: {
@@ -117,6 +122,7 @@ export class RefreshManager {
       },
       body: JSON.stringify({ refreshToken }),
       ...this.config.fetchOptions,
+      signal: this.controller.signal,
     });
 
     if (!response.ok) {
