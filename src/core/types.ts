@@ -21,8 +21,11 @@ export interface RefreshConfig {
   handler?: (refreshToken: string) => Promise<TokenPair>;
   headers?: Record<string, string>;
   fetchOptions?: Omit<RequestInit, 'method' | 'headers' | 'body'>;
+  /** Seconds before token expiry to proactively trigger a refresh. @defaultValue `60` */
   buffer?: number;
+  /** Maximum retry attempts after a transient refresh failure. @defaultValue `3` */
   maxRetries?: number;
+  /** Base delay in ms between retries (exponential backoff with jitter). @defaultValue `1000` */
   retryDelay?: number;
 }
 
@@ -30,11 +33,13 @@ export interface CookieConfig {
   path?: string;
   domain?: string;
   sameSite?: 'strict' | 'lax' | 'none';
+  /** Adds the `Secure` flag. Automatically enabled when `sameSite` is `'none'`. */
   secure?: boolean;
   maxAge?: number | 'auto';
 }
 
 export interface TokenManagerConfig {
+  /** Storage backend. Defaults to `'cookie'`. Use `'memory'` for maximum XSS resistance. */
   storage?: StorageType | StorageAdapter;
   cookie?: CookieConfig;
   refresh?: RefreshConfig;
@@ -62,7 +67,9 @@ export interface TokenManager<TUser = Record<string, unknown>> {
   onAuthChange(listener: AuthStateListener<TUser>): () => void;
   getState(): AuthState<TUser>;
   logout(): void;
+  /** SSR helper. Extracts tokens from a `Cookie` request header. Returns `null` for non-cookie storage. */
   fromCookieHeader(cookieHeader: string): TokenPair | null;
+  /** Returns a `fetch` wrapper that attaches `Authorization: Bearer` and retries once on 401. */
   createAuthFetch(): (
     input: RequestInfo | URL,
     init?: RequestInit

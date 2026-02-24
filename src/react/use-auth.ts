@@ -3,6 +3,15 @@ import type { TokenManager } from '../core/types';
 import { TokenSmithContext } from './provider';
 import type { UseAuthReturn } from './types';
 
+/**
+ * Subscribes to auth state. Re-renders on every auth change.
+ * Must be used inside a {@link TokenProvider}.
+ *
+ * @example
+ * ```tsx
+ * const { isAuthenticated, user, logout } = useAuth<MyUser>();
+ * ```
+ */
 export function useAuth<
   TUser = Record<string, unknown>,
 >(): UseAuthReturn<TUser> {
@@ -32,6 +41,10 @@ export function useAuth<
   return { ...state, getAccessToken, logout };
 }
 
+/**
+ * Returns the raw {@link TokenManager} from context. Prefer {@link useAuth}
+ * for component state. Must be used inside a {@link TokenProvider}.
+ */
 export function useTokenManager<
   TUser = Record<string, unknown>,
 >(): TokenManager<TUser> {
