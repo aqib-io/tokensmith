@@ -26,6 +26,7 @@ export class TokenManagerImpl<TUser = Record<string, unknown>>
   private readonly listeners: Set<AuthStateListener<TUser>>;
   private state: AuthState<TUser>;
   private visibilityHandler: (() => void) | null = null;
+  private cachedUser: { token: string; user: TUser | null } | null = null;
 
   constructor(config: TokenManagerConfig) {
     this.config = config;
@@ -206,9 +207,20 @@ export class TokenManagerImpl<TUser = Record<string, unknown>>
   private computeState(): AuthState<TUser> {
     const token = this.storage.get(ACCESS_KEY);
     const isAuth = this.isTokenValid(token);
+    let user: TUser | null = null;
+    if (isAuth && token !== null) {
+      if (this.cachedUser?.token === token) {
+        user = this.cachedUser.user;
+      } else {
+        user = this.safeDecodeUser(token);
+        this.cachedUser = { token, user };
+      }
+    } else {
+      this.cachedUser = null;
+    }
     return {
       isAuthenticated: isAuth,
-      user: isAuth ? this.safeDecodeUser(token) : null,
+      user,
       accessToken: isAuth ? token : null,
       isRefreshing: this.refreshManager?.queue.isExecuting ?? false,
       error: null,
@@ -222,7 +234,8 @@ export class TokenManagerImpl<TUser = Record<string, unknown>>
       s.isAuthenticated === newState.isAuthenticated &&
       s.accessToken === newState.accessToken &&
       s.isRefreshing === newState.isRefreshing &&
-      s.error === newState.error
+      s.error === newState.error &&
+      s.user === newState.user
     ) {
       return;
     }

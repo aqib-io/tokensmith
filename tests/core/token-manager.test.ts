@@ -505,6 +505,17 @@ describe("TokenManager", () => {
       expect(listener).not.toHaveBeenCalled();
       auth.destroy();
     });
+
+    it("does not notify listeners when setTokens is called twice with the same token", () => {
+      const auth = createTokenManager({ storage: "memory" });
+      const token = createTestJwt();
+      auth.setTokens({ accessToken: token });
+      const listener = vi.fn();
+      auth.onAuthChange(listener);
+      auth.setTokens({ accessToken: token });
+      expect(listener).not.toHaveBeenCalled();
+      auth.destroy();
+    });
   });
 
   describe("onAuthFailure callback", () => {
