@@ -222,7 +222,7 @@ export class TokenManagerImpl<TUser = Record<string, unknown>>
       isAuthenticated: isAuth,
       user,
       accessToken: isAuth ? token : null,
-      isRefreshing: this.refreshManager?.queue.isExecuting ?? false,
+      isRefreshing: this.refreshManager?.isRefreshing ?? false,
       error: null,
     };
   }

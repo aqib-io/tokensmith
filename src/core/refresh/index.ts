@@ -9,7 +9,11 @@ const DEFAULT_MAX_RETRIES = 3;
 const DEFAULT_RETRY_DELAY = 1000;
 
 export class RefreshManager {
-  readonly queue: PromiseQueue<TokenPair>;
+  private readonly queue: PromiseQueue<TokenPair>;
+
+  get isRefreshing(): boolean {
+    return this.queue.isExecuting;
+  }
   private timer: ReturnType<typeof setTimeout> | null = null;
   private onlineListener: (() => void) | null = null;
   private onlineReject: (() => void) | null = null;
