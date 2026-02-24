@@ -89,6 +89,7 @@ export class RefreshManager {
         this.onRefresh(tokens);
         return tokens;
       } catch (error) {
+        if (error instanceof RefreshFailedError) throw error;
         lastError = error;
         if (attempt < maxRetries) {
           await this.sleep(retryDelay * 2 ** attempt);
@@ -119,6 +120,14 @@ export class RefreshManager {
     });
 
     if (!response.ok) {
+      if (response.status === 401 || response.status === 403) {
+        const error = new RefreshFailedError(
+          `Refresh token rejected (HTTP ${response.status})`,
+          0
+        );
+        this.onFailure(error);
+        throw error;
+      }
       throw new NetworkError(
         `Refresh request failed with status ${response.status}`
       );

@@ -152,6 +152,25 @@ describe("RefreshManager", () => {
       });
       manager.destroy();
     });
+
+    it("rejects immediately without retrying when the endpoint returns 401", async () => {
+      const storage = new MemoryStorageAdapter();
+      storage.set("tk_refresh", "rt");
+      const fetchMock = vi.fn().mockResolvedValue({ ok: false, status: 401 });
+      vi.stubGlobal("fetch", fetchMock);
+      const onFailure = vi.fn();
+      const manager = new RefreshManager(
+        { endpoint: "/api/refresh", maxRetries: 3 },
+        storage,
+        vi.fn(),
+        onFailure,
+      );
+
+      await expect(manager.forceRefresh()).rejects.toThrow(RefreshFailedError);
+      expect(fetchMock).toHaveBeenCalledTimes(1);
+      expect(onFailure).toHaveBeenCalledTimes(1);
+      manager.destroy();
+    });
   });
 
   describe("forceRefresh — error guards", () => {
