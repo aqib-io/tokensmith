@@ -206,6 +206,7 @@ describe("RefreshManager", () => {
   describe("forceRefresh — retry and backoff", () => {
     beforeEach(() => {
       vi.useFakeTimers();
+      vi.spyOn(Math, 'random').mockReturnValue(0);
     });
 
     afterEach(() => {
@@ -269,6 +270,32 @@ describe("RefreshManager", () => {
         expect.objectContaining({ code: "REFRESH_FAILED", attempts: 3 }),
       );
       expect(onRefresh).not.toHaveBeenCalled();
+      manager.destroy();
+    });
+
+    it("sleep duration includes jitter of up to 50% of the retry delay", async () => {
+      vi.spyOn(Math, 'random').mockReturnValue(1.0);
+      const storage = new MemoryStorageAdapter();
+      storage.set("tk_refresh", "rt");
+      const handler = vi
+        .fn()
+        .mockRejectedValueOnce(new Error("fail"))
+        .mockResolvedValueOnce({ accessToken: "at" });
+      const manager = new RefreshManager(
+        { handler, maxRetries: 1, retryDelay: 1000 },
+        storage,
+        vi.fn(),
+        vi.fn(),
+      );
+
+      const promise = manager.forceRefresh();
+      await vi.advanceTimersByTimeAsync(1499);
+      expect(handler).toHaveBeenCalledTimes(1);
+
+      await vi.advanceTimersByTimeAsync(1);
+      const result = await promise;
+      expect(handler).toHaveBeenCalledTimes(2);
+      expect(result.accessToken).toBe("at");
       manager.destroy();
     });
   });

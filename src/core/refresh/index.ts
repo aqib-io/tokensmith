@@ -96,7 +96,8 @@ export class RefreshManager {
           throw new RefreshFailedError('Refresh aborted', 0);
         lastError = error;
         if (attempt < maxRetries) {
-          await this.sleep(retryDelay * 2 ** attempt);
+          const jitter = Math.random() * retryDelay * 0.5;
+          await this.sleep(retryDelay * 2 ** attempt + jitter);
         }
       }
     }
