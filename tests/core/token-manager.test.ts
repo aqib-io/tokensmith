@@ -426,6 +426,23 @@ describe("TokenManager", () => {
       auth.destroy();
     });
 
+    it("schedules a refresh timer for a pre-existing valid token at construction", async () => {
+      const newToken = createTestJwt({}, 3600);
+      const handler = vi.fn().mockResolvedValueOnce({ accessToken: newToken });
+      const storage = new MemoryStorageAdapter();
+      storage.set("tk_access", createTestJwt({}, 120));
+      storage.set("tk_refresh", "rt");
+      const auth = createTokenManager({
+        storage,
+        refresh: { handler, buffer: 60 },
+      });
+
+      await vi.advanceTimersByTimeAsync(60_000);
+
+      expect(handler).toHaveBeenCalledTimes(1);
+      auth.destroy();
+    });
+
     it("schedules a refresh timer on instance B after it receives TOKEN_SET from instance A sharing storage", async () => {
       const sharedStorage = new MemoryStorageAdapter();
       const newToken = createTestJwt({}, 3600);
@@ -444,6 +461,25 @@ describe("TokenManager", () => {
       expect(handlerB).toHaveBeenCalledTimes(1);
       authA.destroy();
       authB.destroy();
+    });
+  });
+
+  describe("visibilitychange refresh", () => {
+    it("triggers refresh when tab becomes visible with an expired access token", async () => {
+      const newToken = createTestJwt({}, 3600);
+      const handler = vi.fn().mockResolvedValueOnce({ accessToken: newToken });
+      const storage = new MemoryStorageAdapter();
+      storage.set("tk_access", createTestJwt({}, -1));
+      storage.set("tk_refresh", "rt");
+      const auth = createTokenManager({ storage, refresh: { handler } });
+
+      document.dispatchEvent(new Event("visibilitychange"));
+
+      await vi.waitFor(() => {
+        expect(storage.get("tk_access")).toBe(newToken);
+      });
+      expect(handler).toHaveBeenCalledTimes(1);
+      auth.destroy();
     });
   });
 
