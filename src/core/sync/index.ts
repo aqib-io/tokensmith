@@ -1,17 +1,22 @@
 import { SYNC_KEY } from '../constants';
 import type { SyncEvent } from './types';
 
+const SYNC_TYPES = new Set(['TOKEN_SET', 'TOKEN_REFRESHED', 'TOKEN_CLEARED']);
+
+function isSyncEvent(data: unknown): data is SyncEvent {
+  return (
+    data !== null &&
+    typeof data === 'object' &&
+    'type' in data &&
+    typeof (data as Record<string, unknown>).type === 'string' &&
+    SYNC_TYPES.has((data as Record<string, unknown>).type as string)
+  );
+}
+
 function parseSyncEvent(value: string): SyncEvent | null {
   try {
     const parsed: unknown = JSON.parse(value);
-    if (
-      parsed !== null &&
-      typeof parsed === 'object' &&
-      'type' in parsed &&
-      typeof (parsed as Record<string, unknown>).type === 'string'
-    ) {
-      return parsed as SyncEvent;
-    }
+    if (isSyncEvent(parsed)) return parsed;
     return null;
   } catch {
     return null;
@@ -33,7 +38,7 @@ export class TabSyncManager {
     if (typeof BroadcastChannel !== 'undefined') {
       this.channel = new BroadcastChannel(this.channelName);
       this.channel.onmessage = (event: MessageEvent) => {
-        this.onSync(event.data as SyncEvent);
+        if (isSyncEvent(event.data)) this.onSync(event.data);
       };
     } else {
       this.storageListener = (event: StorageEvent) => {

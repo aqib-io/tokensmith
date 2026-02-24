@@ -53,6 +53,18 @@ describe("TabSyncManager", () => {
         manager.destroy();
       }).not.toThrow();
     });
+
+    it("does not call onSync when a message with an unknown type is posted to the channel", () => {
+      const onSync = vi.fn();
+      const receiver = new TabSyncManager("tokensmith", onSync);
+      receiver.start();
+
+      const external = new BroadcastChannel("tokensmith");
+      external.postMessage({ type: "INJECTED_EVENT" });
+      external.close();
+
+      expect(onSync).not.toHaveBeenCalled();
+    });
   });
 
   describe("fallback mode (localStorage storage event)", () => {
@@ -143,6 +155,21 @@ describe("TabSyncManager", () => {
         new StorageEvent("storage", {
           key: "tk_sync",
           newValue: JSON.stringify({ type: 42 }),
+        }),
+      );
+
+      expect(onSync).not.toHaveBeenCalled();
+    });
+
+    it("ignores storage events with a valid JSON object but an unknown type value", () => {
+      const onSync = vi.fn();
+      const manager = new TabSyncManager("tokensmith", onSync);
+      manager.start();
+
+      window.dispatchEvent(
+        new StorageEvent("storage", {
+          key: "tk_sync",
+          newValue: JSON.stringify({ type: "UNKNOWN_EVENT" }),
         }),
       );
 
