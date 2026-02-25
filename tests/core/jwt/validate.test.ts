@@ -1,13 +1,6 @@
 import { InvalidTokenError } from '@/core/errors';
 import { getTimeUntilExpiry, isTokenExpired } from '@/core/jwt/validate';
-import { createTestJwt } from '../../helpers/create-test-jwt';
-
-const makeJwt = (payload: Record<string, unknown>): string => {
-  const enc = (s: string) =>
-    btoa(s).replace(/\+/g, '-').replace(/\//g, '_').replace(/=/g, '');
-  const header = enc(JSON.stringify({ alg: 'HS256', typ: 'JWT' }));
-  return `${header}.${enc(JSON.stringify(payload))}.sig`;
-};
+import { createRawJwt, createTestJwt } from '../../helpers/create-test-jwt';
 
 describe('isTokenExpired', () => {
   it('returns false for a token expiring in the future', () => {
@@ -31,7 +24,7 @@ describe('isTokenExpired', () => {
   });
 
   it('returns false for a token without an exp claim', () => {
-    const token = makeJwt({ sub: 'user-1' });
+    const token = createRawJwt({ sub: 'user-1' });
     expect(isTokenExpired(token)).toBe(false);
   });
 
@@ -62,7 +55,7 @@ describe('getTimeUntilExpiry', () => {
   });
 
   it('returns Infinity for a token without an exp claim', () => {
-    const token = makeJwt({ sub: 'user-1' });
+    const token = createRawJwt({ sub: 'user-1' });
     expect(getTimeUntilExpiry(token)).toBe(Infinity);
   });
 

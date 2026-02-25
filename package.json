@@ -48,7 +48,8 @@
     }
   },
   "files": [
-    "dist"
+    "dist",
+    "CHANGELOG.md"
   ],
   "sideEffects": false,
   "peerDependencies": {
@@ -91,7 +92,7 @@
     "typecheck": "tsc --noEmit",
     "lint": "biome check src/ tests/",
     "lint:fix": "biome check --write src/ tests/",
-    "format": "biome format --write src/",
+    "format": "biome format --write src/ tests/",
     "prepublishOnly": "npm run typecheck && npm run lint && npm run test && npm run build"
   }
 }

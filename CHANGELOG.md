@@ -28,7 +28,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Typed error classes** — `TokenSmithError` (base), `InvalidTokenError`, `TokenExpiredError`, `RefreshFailedError` (with `attempts` count), `StorageError`, `NetworkError`.
 - **`onAuthFailure` callback** — invoked once when all refresh retries are exhausted.
 - Dual ESM + CommonJS output; full TypeScript declaration files; zero runtime dependencies.
-- 117 unit and integration tests.
+- 140 unit and integration tests.
 
 [Unreleased]: https://github.com/aqib-io/tokensmith/compare/v0.1.0...HEAD
 [0.1.0]: https://github.com/aqib-io/tokensmith/releases/tag/v0.1.0

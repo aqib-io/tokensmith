@@ -2,13 +2,7 @@ import { RefreshFailedError } from '@/core/errors';
 import { RefreshManager } from '@/core/refresh';
 import { MemoryStorageAdapter } from '@/core/storage/memory';
 import type { TokenPair } from '@/core/types';
-import { createTestJwt } from '../../helpers/create-test-jwt';
-
-const makeJwtNoExp = (): string => {
-  const enc = (s: string) =>
-    btoa(s).replace(/\+/g, '-').replace(/\//g, '_').replace(/=/g, '');
-  return `${enc(JSON.stringify({ alg: 'HS256', typ: 'JWT' }))}.${enc(JSON.stringify({ sub: 'user-1' }))}.sig`;
-};
+import { createRawJwt, createTestJwt } from '../../helpers/create-test-jwt';
 
 describe('RefreshManager', () => {
   describe('forceRefresh — handler mode', () => {
@@ -369,7 +363,7 @@ describe('RefreshManager', () => {
         vi.fn()
       );
 
-      manager.scheduleRefresh(makeJwtNoExp());
+      manager.scheduleRefresh(createRawJwt({ sub: 'user-1' }));
 
       vi.advanceTimersByTime(Number.MAX_SAFE_INTEGER);
       expect(onRefresh).not.toHaveBeenCalled();

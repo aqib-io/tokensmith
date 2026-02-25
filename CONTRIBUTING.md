@@ -32,9 +32,9 @@ That's it — no build step needed before running tests. The repo uses [Biome](h
 | `npm run test:watch` | Run tests in watch mode |
 | `npm run test:coverage` | Run tests with coverage report |
 | `npm run typecheck` | Run `tsc --noEmit` (no output files) |
-| `npm run lint` | Check `src/` with Biome |
-| `npm run lint:fix` | Auto-fix Biome lint errors |
-| `npm run format` | Auto-format `src/` with Biome |
+| `npm run lint` | Check `src/` and `tests/` with Biome |
+| `npm run lint:fix` | Auto-fix Biome lint errors in `src/` and `tests/` |
+| `npm run format` | Auto-format `src/` and `tests/` with Biome |
 
 **Before submitting a PR**, make sure all four gates pass:
 

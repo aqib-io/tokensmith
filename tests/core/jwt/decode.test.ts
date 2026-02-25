@@ -1,23 +1,10 @@
 import { InvalidTokenError } from '@/core/errors';
 import { decodeJwt } from '@/core/jwt/decode';
-import { createTestJwt } from '../../helpers/create-test-jwt';
-
-const makeJwt = (payload: Record<string, unknown>): string => {
-  const enc = (s: string) =>
-    btoa(s).replace(/\+/g, '-').replace(/\//g, '_').replace(/=/g, '');
-  const header = enc(JSON.stringify({ alg: 'HS256', typ: 'JWT' }));
-  return `${header}.${enc(JSON.stringify(payload))}.sig`;
-};
-
-const makeUtf8Jwt = (payload: Record<string, unknown>): string => {
-  const enc = (s: string) => {
-    const bytes = new TextEncoder().encode(s);
-    const bin = Array.from(bytes, (b) => String.fromCharCode(b)).join('');
-    return btoa(bin).replace(/\+/g, '-').replace(/\//g, '_').replace(/=/g, '');
-  };
-  const header = enc(JSON.stringify({ alg: 'HS256', typ: 'JWT' }));
-  return `${header}.${enc(JSON.stringify(payload))}.sig`;
-};
+import {
+  createRawJwt,
+  createTestJwt,
+  createUtf8Jwt,
+} from '../../helpers/create-test-jwt';
 
 describe('decodeJwt', () => {
   it('decodes a valid JWT and returns the payload', () => {
@@ -62,7 +49,11 @@ describe('decodeJwt', () => {
   });
 
   it('decodes a token with unicode characters in the payload', () => {
-    const token = makeUtf8Jwt({ name: 'Ångström', emoji: '🔐', sub: 'user-1' });
+    const token = createUtf8Jwt({
+      name: 'Ångström',
+      emoji: '🔐',
+      sub: 'user-1',
+    });
     const payload = decodeJwt<{ name: string; emoji: string; sub: string }>(
       token
     );
@@ -73,7 +64,7 @@ describe('decodeJwt', () => {
   });
 
   it('decodes a token without an exp claim', () => {
-    const token = makeJwt({ sub: 'user-1', iss: 'test' });
+    const token = createRawJwt({ sub: 'user-1', iss: 'test' });
     const payload = decodeJwt<{ sub: string; iss: string; exp?: number }>(
       token
     );
