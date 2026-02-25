@@ -20,7 +20,7 @@ export interface RefreshConfig {
   endpoint?: string;
   handler?: (refreshToken: string) => Promise<TokenPair>;
   headers?: Record<string, string>;
-  fetchOptions?: Omit<RequestInit, 'method' | 'headers' | 'body'>;
+  fetchOptions?: Omit<RequestInit, 'method' | 'headers' | 'body' | 'signal'>;
   /** Seconds before token expiry to proactively trigger a refresh. @defaultValue `60` */
   buffer?: number;
   /** Maximum retry attempts after a transient refresh failure. @defaultValue `3` */
