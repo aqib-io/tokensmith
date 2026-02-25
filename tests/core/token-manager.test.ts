@@ -518,6 +518,23 @@ describe("TokenManager", () => {
     });
   });
 
+  describe("syncChannelName isolation", () => {
+    it("instances on different syncChannelNames do not receive each other's TOKEN_SET broadcasts", () => {
+      const storage = new MemoryStorageAdapter();
+      const listenerB = vi.fn();
+
+      const authA = createTokenManager({ storage, syncChannelName: "channel-a" });
+      const authB = createTokenManager({ storage, syncChannelName: "channel-b" });
+      authB.onAuthChange(listenerB);
+
+      authA.setTokens({ accessToken: createTestJwt() });
+
+      expect(listenerB).not.toHaveBeenCalled();
+      authA.destroy();
+      authB.destroy();
+    });
+  });
+
   describe("onAuthFailure callback", () => {
     it("calls onAuthFailure when all refresh retries are exhausted", async () => {
       const onAuthFailure = vi.fn();

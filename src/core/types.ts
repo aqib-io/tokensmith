@@ -44,6 +44,7 @@ export interface TokenManagerConfig {
   cookie?: CookieConfig;
   refresh?: RefreshConfig;
   syncTabs?: boolean;
+  syncChannelName?: string;
   onAuthFailure?: () => void;
 }
 

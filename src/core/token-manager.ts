@@ -55,7 +55,9 @@ export class TokenManagerImpl<TUser = Record<string, unknown>>
 
     const shouldSync = config.syncTabs !== false && config.storage !== 'memory';
     this.syncManager = shouldSync
-      ? new TabSyncManager('tokensmith', (event) => this.handleSyncEvent(event))
+      ? new TabSyncManager(config.syncChannelName ?? 'tokensmith', (event) =>
+          this.handleSyncEvent(event)
+        )
       : null;
     this.syncManager?.start();
 
