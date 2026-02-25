@@ -453,6 +453,29 @@ auth.onAuthChange((state) => {
 
 Memory storage is the most XSS-resistant option. Pair it with `refresh.endpoint` so the access token can be restored from the persisted refresh token on page load.
 
+### Maximum security configuration
+
+The most XSS-resistant setup stores the access token in memory and relies on a server-set HttpOnly cookie as the refresh credential — the cookie is never readable by JavaScript:
+
+```ts
+const auth = createTokenManager({
+  storage: 'memory',
+  refresh: {
+    handler: async () => {
+      const res = await fetch('/api/auth/refresh', {
+        method: 'POST',
+        credentials: 'include', // sends the HttpOnly refresh cookie automatically
+      });
+      return res.json(); // { accessToken: string }
+    },
+  },
+});
+```
+
+- **Access token** — lives only in memory; page XSS cannot read it
+- **Refresh token** — a server-set HttpOnly cookie; invisible to JavaScript entirely
+- **On page reload** — the refresh handler runs automatically; the session is silently restored without any token being stored in script-accessible storage
+
 ## Compatibility
 
 | Target | Requirement |
