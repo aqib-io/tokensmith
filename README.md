@@ -194,6 +194,8 @@ interface AuthState<TUser = Record<string, unknown>> {
 }
 ```
 
+`error` is set when a refresh fails and cleared on the next successful state transition (e.g. `setTokens`, `logout`). To handle auth failures durably, use the `onAuthFailure` callback in your config.
+
 ### Subscribing to changes
 
 `onAuthChange` registers a listener that fires on every auth state transition. It returns an unsubscribe function.
@@ -371,13 +373,13 @@ Auto-refresh is offline-aware: if `navigator.onLine` is `false`, the retry is de
 
 ## SSR Support
 
-`fromCookieHeader()` parses a raw `Cookie:` request header string and returns the token pair. Available when using cookie storage (the default).
+`fromCookieHeader()` parses a raw `Cookie:` request header string and returns the token pair. It works with any storage backend, so you can safely use `memory` storage on the server (where `document` is unavailable).
 
 ```ts
 import { createTokenManager } from 'tokensmith';
 
-// Next.js, Express, or any server framework
-const auth = createTokenManager();
+// Next.js, Express, or any server framework — use memory storage on the server
+const auth = createTokenManager({ storage: 'memory' });
 
 const tokens = auth.fromCookieHeader(request.headers.get('cookie') ?? '');
 if (tokens) {

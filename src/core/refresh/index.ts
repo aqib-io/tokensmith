@@ -18,6 +18,7 @@ export class RefreshManager {
   private onlineListener: (() => void) | null = null;
   private onlineReject: (() => void) | null = null;
   private controller: AbortController | null = null;
+  private destroyed = false;
 
   constructor(
     private readonly config: RefreshConfig,
@@ -54,6 +55,7 @@ export class RefreshManager {
   }
 
   destroy(): void {
+    this.destroyed = true;
     this.cancelSchedule();
     this.controller?.abort();
     if (this.onlineListener !== null) {
@@ -86,6 +88,8 @@ export class RefreshManager {
     let lastError: unknown;
 
     for (let attempt = 0; attempt <= maxRetries; attempt++) {
+      if (this.destroyed) throw new RefreshFailedError('Refresh aborted', 0);
+
       if (typeof navigator !== 'undefined' && !navigator.onLine) {
         await this.waitForOnline();
       }

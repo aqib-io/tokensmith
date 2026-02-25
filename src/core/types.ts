@@ -62,19 +62,27 @@ export type AuthStateListener<TUser = Record<string, unknown>> = (
 
 export interface TokenManager<TUser = Record<string, unknown>> {
   setTokens(tokens: TokenPair): void;
+  /**
+   * Returns a valid access token, triggering a refresh if the current token is expired.
+   * @throws {RefreshFailedError} When a refresh is attempted and all retries are exhausted.
+   */
   getAccessToken(): Promise<string | null>;
   getUser(): TUser | null;
   isAuthenticated(): boolean;
   onAuthChange(listener: AuthStateListener<TUser>): () => void;
   getState(): AuthState<TUser>;
   logout(): void;
-  /** SSR helper. Extracts tokens from a `Cookie` request header. Returns `null` for non-cookie storage. */
+  /** SSR helper. Extracts `tk_access` / `tk_refresh` tokens from a raw `Cookie` request header. Works with any storage backend. */
   fromCookieHeader(cookieHeader: string): TokenPair | null;
   /** Returns a `fetch` wrapper that attaches `Authorization: Bearer` and retries once on 401. */
   createAuthFetch(): (
     input: RequestInfo | URL,
     init?: RequestInit
   ) => Promise<Response>;
+  /**
+   * Returns a `{ Authorization: 'Bearer <token>' }` header object, or `{}` when unauthenticated.
+   * @throws {RefreshFailedError} When a refresh is attempted and all retries are exhausted.
+   */
   getAuthHeader(): Promise<{ Authorization: string } | Record<string, never>>;
   /** Tears down timers, listeners, and sync channels. Do not call any other method on this instance after `destroy()`. */
   destroy(): void;

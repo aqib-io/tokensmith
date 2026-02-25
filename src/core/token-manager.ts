@@ -4,7 +4,7 @@ import { decodeJwt } from './jwt/decode';
 import { isTokenExpired } from './jwt/validate';
 import { RefreshManager } from './refresh';
 import { createStorage } from './storage';
-import { CookieStorageAdapter } from './storage/cookie';
+import { parseCookieString } from './storage/cookie';
 import { TabSyncManager } from './sync';
 import type { SyncEvent } from './sync/types';
 import type {
@@ -124,10 +124,14 @@ export class TokenManagerImpl<TUser = Record<string, unknown>>
   }
 
   fromCookieHeader(cookieHeader: string): TokenPair | null {
-    if (this.storage instanceof CookieStorageAdapter) {
-      return this.storage.fromCookieHeader(cookieHeader);
-    }
-    return null;
+    const cookies = parseCookieString(cookieHeader);
+    const accessToken = cookies[ACCESS_KEY];
+    if (!accessToken) return null;
+    const refreshToken = cookies[REFRESH_KEY];
+    return {
+      accessToken,
+      ...(refreshToken !== undefined && { refreshToken }),
+    };
   }
 
   createAuthFetch(): (

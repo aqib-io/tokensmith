@@ -6,7 +6,7 @@ import type { CookieConfig, StorageAdapter, TokenPair } from '../types';
 const DEFAULT_PATH = '/';
 const DEFAULT_SAME_SITE = 'strict' as const;
 
-function parseCookieString(str: string): Record<string, string> {
+export function parseCookieString(str: string): Record<string, string> {
   const result: Record<string, string> = {};
   for (const pair of str.split(';')) {
     const trimmed = pair.trim();
@@ -16,7 +16,7 @@ function parseCookieString(str: string): Record<string, string> {
     const name = trimmed.slice(0, eqIdx).trim();
     const value = trimmed.slice(eqIdx + 1).trim();
     if (name) {
-      result[name] = value;
+      result[name] = decodeURIComponent(value);
     }
   }
   return result;
@@ -62,7 +62,7 @@ function buildCookieString(
   const maxAge = resolveMaxAge(value, config.maxAge);
 
   const parts: string[] = [
-    `${key}=${value}`,
+    `${key}=${encodeURIComponent(value)}`,
     `Path=${config.path ?? DEFAULT_PATH}`,
     `SameSite=${capitalizeSameSite(sameSite)}`,
   ];

@@ -70,4 +70,4 @@ export class TabSyncManager {
   }
 }
 
-export type { SyncEvent, SyncEventType } from './types';
+export type { SyncEvent } from './types';

@@ -224,9 +224,15 @@ describe('TokenManager', () => {
       auth.destroy();
     });
 
-    it('returns null when not using cookie storage', () => {
+    it('works with any storage backend, not just cookie storage', () => {
       const auth = createTokenManager({ storage: 'memory' });
-      expect(auth.fromCookieHeader('tk_access=some-token')).toBeNull();
+      const jwt = createTestJwt();
+      const result = auth.fromCookieHeader(
+        `tk_access=${jwt}; tk_refresh=my-refresh-token`
+      );
+      expect(result).not.toBeNull();
+      expect(result?.accessToken).toBe(jwt);
+      expect(result?.refreshToken).toBe('my-refresh-token');
       auth.destroy();
     });
   });
