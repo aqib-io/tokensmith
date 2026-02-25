@@ -75,5 +75,6 @@ export interface TokenManager<TUser = Record<string, unknown>> {
     init?: RequestInit
   ) => Promise<Response>;
   getAuthHeader(): Promise<{ Authorization: string } | Record<string, never>>;
+  /** Tears down timers, listeners, and sync channels. Do not call any other method on this instance after `destroy()`. */
   destroy(): void;
 }
