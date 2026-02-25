@@ -1,18 +1,18 @@
-import { act, renderHook } from "@testing-library/react";
-import type { ReactNode } from "react";
-import { createTokenManager } from "@/core";
-import type { TokenManager } from "@/core/types";
-import { TokenProvider, useAuth } from "@/react";
-import { createTestJwt } from "../helpers/create-test-jwt";
+import { act, renderHook } from '@testing-library/react';
+import type { ReactNode } from 'react';
+import { createTokenManager } from '@/core';
+import type { TokenManager } from '@/core/types';
+import { TokenProvider, useAuth } from '@/react';
+import { createTestJwt } from '../helpers/create-test-jwt';
 
 const makeWrapper = (manager: TokenManager<Record<string, unknown>>) =>
   function Wrapper({ children }: { children: ReactNode }) {
     return <TokenProvider manager={manager}>{children}</TokenProvider>;
   };
 
-describe("useAuth", () => {
-  it("returns unauthenticated initial state", () => {
-    const manager = createTokenManager({ storage: "memory" });
+describe('useAuth', () => {
+  it('returns unauthenticated initial state', () => {
+    const manager = createTokenManager({ storage: 'memory' });
     const { result } = renderHook(() => useAuth(), {
       wrapper: makeWrapper(manager),
     });
@@ -25,8 +25,8 @@ describe("useAuth", () => {
     manager.destroy();
   });
 
-  it("returns authenticated state when tokens are set on the manager before render", () => {
-    const manager = createTokenManager({ storage: "memory" });
+  it('returns authenticated state when tokens are set on the manager before render', () => {
+    const manager = createTokenManager({ storage: 'memory' });
     const token = createTestJwt();
     manager.setTokens({ accessToken: token });
 
@@ -40,8 +40,8 @@ describe("useAuth", () => {
     manager.destroy();
   });
 
-  it("re-renders when the manager state changes", () => {
-    const manager = createTokenManager({ storage: "memory" });
+  it('re-renders when the manager state changes', () => {
+    const manager = createTokenManager({ storage: 'memory' });
     const { result } = renderHook(() => useAuth(), {
       wrapper: makeWrapper(manager),
     });
@@ -61,15 +61,15 @@ describe("useAuth", () => {
     manager.destroy();
   });
 
-  it("throws a descriptive error when used outside <TokenProvider>", () => {
-    vi.spyOn(console, "error").mockImplementation(() => {});
+  it('throws a descriptive error when used outside <TokenProvider>', () => {
+    vi.spyOn(console, 'error').mockImplementation(() => {});
     expect(() => renderHook(() => useAuth())).toThrow(
-      "useAuth must be used within <TokenProvider>"
+      'useAuth must be used within <TokenProvider>'
     );
   });
 
-  it("getAccessToken resolves to the stored access token", async () => {
-    const manager = createTokenManager({ storage: "memory" });
+  it('getAccessToken resolves to the stored access token', async () => {
+    const manager = createTokenManager({ storage: 'memory' });
     const token = createTestJwt();
     manager.setTokens({ accessToken: token });
 
@@ -82,8 +82,8 @@ describe("useAuth", () => {
     manager.destroy();
   });
 
-  it("logout transitions auth state to unauthenticated", () => {
-    const manager = createTokenManager({ storage: "memory" });
+  it('logout transitions auth state to unauthenticated', () => {
+    const manager = createTokenManager({ storage: 'memory' });
     manager.setTokens({ accessToken: createTestJwt() });
 
     const { result } = renderHook(() => useAuth(), {
@@ -101,8 +101,8 @@ describe("useAuth", () => {
     manager.destroy();
   });
 
-  it("does not cause infinite re-renders", () => {
-    const manager = createTokenManager({ storage: "memory" });
+  it('does not cause infinite re-renders', () => {
+    const manager = createTokenManager({ storage: 'memory' });
     const { result } = renderHook(() => useAuth(), {
       wrapper: makeWrapper(manager),
     });
