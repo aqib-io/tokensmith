@@ -27,6 +27,7 @@ export class TokenManagerImpl<TUser = Record<string, unknown>>
   private state: AuthState<TUser>;
   private visibilityHandler: (() => void) | null = null;
   private cachedUser: { token: string; user: TUser | null } | null = null;
+  private pendingError: RefreshFailedError | null = null;
 
   constructor(config: TokenManagerConfig) {
     this.config = config;
@@ -117,6 +118,7 @@ export class TokenManagerImpl<TUser = Record<string, unknown>>
   }
 
   logout(): void {
+    this.pendingError = null;
     this.refreshManager?.cancelSchedule();
     this.storage.clear();
     this.syncManager?.broadcast({ type: 'TOKEN_CLEARED' });
@@ -202,6 +204,7 @@ export class TokenManagerImpl<TUser = Record<string, unknown>>
   }
 
   private storeTokens(tokens: TokenPair): void {
+    this.pendingError = null;
     this.storage.set(ACCESS_KEY, tokens.accessToken);
     if (tokens.refreshToken !== undefined) {
       this.storage.set(REFRESH_KEY, tokens.refreshToken);
@@ -229,7 +232,7 @@ export class TokenManagerImpl<TUser = Record<string, unknown>>
       user,
       accessToken: isAuth ? token : null,
       isRefreshing: this.refreshManager?.isRefreshing ?? false,
-      error: null,
+      error: this.pendingError,
     };
   }
 
@@ -257,8 +260,11 @@ export class TokenManagerImpl<TUser = Record<string, unknown>>
   }
 
   private handleRefreshFailure(error: RefreshFailedError): void {
+    this.pendingError = error;
     const fresh = this.computeState();
-    this.state = { ...fresh, error, isRefreshing: false };
+    // isRefreshing override: the queue's isExecuting flag is still true at this
+    // point because the finally block in PromiseQueue runs after this callback.
+    this.state = { ...fresh, isRefreshing: false };
     for (const listener of this.listeners) {
       listener(this.state);
     }

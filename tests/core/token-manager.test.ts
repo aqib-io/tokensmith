@@ -387,6 +387,36 @@ describe('TokenManager', () => {
     });
   });
 
+  describe('getAuthHeader', () => {
+    it('returns a Bearer Authorization header when authenticated', async () => {
+      const auth = createTokenManager({ storage: 'memory' });
+      const token = createTestJwt();
+      auth.setTokens({ accessToken: token });
+      const header = await auth.getAuthHeader();
+      expect(header).toEqual({ Authorization: `Bearer ${token}` });
+      auth.destroy();
+    });
+
+    it('returns an empty object when not authenticated', async () => {
+      const auth = createTokenManager({ storage: 'memory' });
+      const header = await auth.getAuthHeader();
+      expect(header).toEqual({});
+      auth.destroy();
+    });
+
+    it('triggers a refresh and returns the new token when the access token is expired', async () => {
+      const newToken = createTestJwt({}, 3600);
+      const handler = vi.fn().mockResolvedValueOnce({ accessToken: newToken });
+      const storage = new MemoryStorageAdapter();
+      storage.set('tk_access', createTestJwt({}, -1));
+      storage.set('tk_refresh', 'rt');
+      const auth = createTokenManager({ storage, refresh: { handler } });
+      const header = await auth.getAuthHeader();
+      expect(header).toEqual({ Authorization: `Bearer ${newToken}` });
+      auth.destroy();
+    });
+  });
+
   describe('timer-based auto-refresh', () => {
     beforeEach(() => {
       vi.useFakeTimers();
@@ -435,6 +465,28 @@ describe('TokenManager', () => {
 
       expect(handler).toHaveBeenCalledTimes(1);
       expect(auth.getState().isRefreshing).toBe(false);
+      auth.destroy();
+    });
+
+    it('getState().error persists after a timer-triggered refresh failure until setTokens is called', async () => {
+      const handler = vi.fn().mockRejectedValue(new Error('refresh failed'));
+      const storage = new MemoryStorageAdapter();
+      const auth = createTokenManager({
+        storage,
+        refresh: { handler, buffer: 60, maxRetries: 0 },
+      });
+
+      auth.setTokens({
+        accessToken: createTestJwt({}, 120),
+        refreshToken: 'rt',
+      });
+
+      await vi.advanceTimersByTimeAsync(60_000);
+
+      expect(auth.getState().error).toBeInstanceOf(RefreshFailedError);
+
+      auth.setTokens({ accessToken: createTestJwt({}, 3600) });
+      expect(auth.getState().error).toBeNull();
       auth.destroy();
     });
 

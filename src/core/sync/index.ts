@@ -56,8 +56,12 @@ export class TabSyncManager {
       return;
     }
     if (typeof window === 'undefined') return;
-    localStorage.setItem(SYNC_KEY, JSON.stringify(event));
-    localStorage.removeItem(SYNC_KEY);
+    try {
+      localStorage.setItem(SYNC_KEY, JSON.stringify(event));
+      localStorage.removeItem(SYNC_KEY);
+    } catch {
+      // localStorage unavailable (e.g. storage disabled in private mode)
+    }
   }
 
   destroy(): void {

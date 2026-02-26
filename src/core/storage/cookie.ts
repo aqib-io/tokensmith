@@ -1,7 +1,7 @@
 import { ACCESS_KEY, REFRESH_KEY } from '../constants';
 import { StorageError } from '../errors';
 import { decodeJwt } from '../jwt/decode';
-import type { CookieConfig, StorageAdapter, TokenPair } from '../types';
+import type { CookieConfig, StorageAdapter } from '../types';
 
 const DEFAULT_PATH = '/';
 const DEFAULT_SAME_SITE = 'strict' as const;
@@ -16,7 +16,11 @@ export function parseCookieString(str: string): Record<string, string> {
     const name = trimmed.slice(0, eqIdx).trim();
     const value = trimmed.slice(eqIdx + 1).trim();
     if (name) {
-      result[name] = decodeURIComponent(value);
+      try {
+        result[name] = decodeURIComponent(value);
+      } catch {
+        result[name] = value;
+      }
     }
   }
   return result;
@@ -123,16 +127,5 @@ export class CookieStorageAdapter implements StorageAdapter {
   clear(): void {
     this.remove(ACCESS_KEY);
     this.remove(REFRESH_KEY);
-  }
-
-  fromCookieHeader(cookieHeader: string): TokenPair | null {
-    const cookies = parseCookieString(cookieHeader);
-    const accessToken = cookies[ACCESS_KEY];
-    if (!accessToken) return null;
-    const refreshToken = cookies[REFRESH_KEY];
-    return {
-      accessToken,
-      ...(refreshToken !== undefined && { refreshToken }),
-    };
   }
 }

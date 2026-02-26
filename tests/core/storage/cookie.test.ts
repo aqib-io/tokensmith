@@ -1,5 +1,5 @@
 import { StorageError } from '@/core/errors';
-import { CookieStorageAdapter } from '@/core/storage/cookie';
+import { CookieStorageAdapter, parseCookieString } from '@/core/storage/cookie';
 import { createTestJwt } from '../../helpers/create-test-jwt';
 
 const cookieProtoDescriptor = Object.getOwnPropertyDescriptor(
@@ -91,30 +91,6 @@ describe('CookieStorageAdapter', () => {
     expect(writes[0]).toContain('Secure');
   });
 
-  it('fromCookieHeader parses access token from a raw header string', () => {
-    const adapter = new CookieStorageAdapter();
-    const result = adapter.fromCookieHeader('tk_access=my-access-token');
-    expect(result).not.toBeNull();
-    expect(result!.accessToken).toBe('my-access-token');
-    expect(result!.refreshToken).toBeUndefined();
-  });
-
-  it('fromCookieHeader returns both access and refresh tokens', () => {
-    const adapter = new CookieStorageAdapter();
-    const result = adapter.fromCookieHeader(
-      'tk_access=access-token; tk_refresh=refresh-token'
-    );
-    expect(result).not.toBeNull();
-    expect(result!.accessToken).toBe('access-token');
-    expect(result!.refreshToken).toBe('refresh-token');
-  });
-
-  it('fromCookieHeader returns null when access token is absent', () => {
-    const adapter = new CookieStorageAdapter();
-    expect(adapter.fromCookieHeader('tk_refresh=refresh-token')).toBeNull();
-    expect(adapter.fromCookieHeader('')).toBeNull();
-  });
-
   it('throws StorageError for all operations when document is unavailable', () => {
     vi.stubGlobal('document', undefined);
     const adapter = new CookieStorageAdapter();
@@ -168,5 +144,50 @@ describe('CookieStorageAdapter', () => {
     const maxAge = matchResult ? Number(matchResult[1] ?? '0') : 0;
     expect(maxAge).toBeGreaterThan(3590);
     expect(maxAge).toBeLessThanOrEqual(3600);
+  });
+});
+
+describe('parseCookieString', () => {
+  it('parses a single key=value pair', () => {
+    expect(parseCookieString('foo=bar')).toEqual({ foo: 'bar' });
+  });
+
+  it('parses multiple pairs separated by semicolons', () => {
+    expect(parseCookieString('a=1; b=2; c=3')).toEqual({
+      a: '1',
+      b: '2',
+      c: '3',
+    });
+  });
+
+  it('decodes percent-encoded values', () => {
+    expect(parseCookieString('key=hello%20world')).toEqual({
+      key: 'hello world',
+    });
+  });
+
+  it('does not throw on a malformed percent-encoded value — falls back to the raw value', () => {
+    // "50%off" has a bare % that is not a valid percent-escape sequence.
+    // parseCookieString must not throw and must still parse surrounding cookies.
+    expect(() =>
+      parseCookieString(
+        'tk_access=valid-token; analytics=50%off; tk_refresh=rt'
+      )
+    ).not.toThrow();
+
+    const result = parseCookieString(
+      'tk_access=valid-token; analytics=50%off; tk_refresh=rt'
+    );
+    expect(result.tk_access).toBe('valid-token');
+    expect(result.tk_refresh).toBe('rt');
+    expect(result.analytics).toBe('50%off');
+  });
+
+  it('returns an empty object for an empty string', () => {
+    expect(parseCookieString('')).toEqual({});
+  });
+
+  it('skips pairs with no equals sign', () => {
+    expect(parseCookieString('noequals; key=value')).toEqual({ key: 'value' });
   });
 });
