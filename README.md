@@ -23,7 +23,9 @@ Every app using JWTs ends up writing the same client-side logic: store tokens se
 - [React](#react)
 - [Core API](#core-api)
 - [React API](#react-api)
+- [Configuration](#configuration)
 - [Storage Backends](#storage-backends)
+- [Cross-Tab Sync](#cross-tab-sync)
 - [Auto-Refresh](#auto-refresh)
 - [SSR Support](#ssr-support)
 - [TypeScript](#typescript)
@@ -170,7 +172,7 @@ function ProtectedRoute({ children }: { children: React.ReactNode }) {
 | `logout()` | `void` | Clear all tokens, cancel refresh timer, notify listeners |
 | `getAuthHeader()` | `Promise<{ Authorization: string } \| {}>` | Bearer header for axios interceptors and similar |
 | `createAuthFetch()` | `typeof fetch` | Fetch wrapper: auto-attaches `Authorization`, retries once on 401 |
-| `fromCookieHeader(header)` | `TokenPair \| null` | Extract tokens from a raw `Cookie:` header string (SSR; cookie storage only) |
+| `fromCookieHeader(header)` | `TokenPair \| null` | Extract tokens from a raw `Cookie:` header string (SSR; works with any storage backend) |
 | `destroy()` | `void` | Cancel timers, close channels, clear all listeners |
 
 ### `TokenPair`
@@ -282,6 +284,46 @@ const manager = useTokenManager();
 const authFetch = manager.createAuthFetch();
 ```
 
+## Configuration
+
+`createTokenManager(config?)` accepts a `TokenManagerConfig` object with the following options:
+
+```ts
+const auth = createTokenManager({
+  // Storage backend: 'cookie' (default), 'memory', 'localStorage', or a custom StorageAdapter
+  storage: 'cookie',
+
+  // Cookie-specific options (only applies when storage is 'cookie')
+  cookie: {
+    path: '/',
+    domain: '.example.com',
+    sameSite: 'strict',        // 'strict' | 'lax' | 'none'
+    secure: true,              // auto-detected from location.protocol when omitted
+    maxAge: 'auto',            // derives expiry from JWT exp claim; omit for session cookie
+  },
+
+  // Auto-refresh configuration
+  refresh: {
+    endpoint: '/api/auth/refresh', // URL — sends POST with { refreshToken } body
+    handler: async (rt) => {},     // or a custom async handler (use one, not both)
+    buffer: 60,                    // seconds before expiry to refresh (default: 60)
+    maxRetries: 3,                 // retry attempts on transient failure (default: 3)
+    retryDelay: 1000,              // base delay in ms with exponential backoff + jitter (default: 1000)
+    headers: {},                   // extra headers on refresh requests
+    fetchOptions: {},              // extra RequestInit options (e.g. { credentials: 'include' })
+  },
+
+  // Cross-tab sync (default: true; automatically disabled for memory storage)
+  syncTabs: true,
+
+  // BroadcastChannel name for sync (default: 'tokensmith')
+  syncChannelName: 'tokensmith',
+
+  // Called when a refresh fails (retries exhausted, 401/403 rejection, or no refresh token)
+  onAuthFailure: () => {},
+});
+```
+
 ## Storage Backends
 
 | Value | Description | XSS Risk | Persistence |
@@ -320,6 +362,38 @@ const auth = createTokenManager({
 });
 ```
 
+## Cross-Tab Sync
+
+Cross-tab sync is enabled by default for persistent storage backends (`cookie` and `localStorage`). Logout, login, and token refresh in one tab are reflected in all other tabs instantly via `BroadcastChannel`, with a `localStorage` `storage` event fallback for older browsers.
+
+### Disabling sync
+
+Set `syncTabs: false` to opt out. When disabled, each tab operates independently — a logout in one tab will not affect other tabs.
+
+```ts
+const auth = createTokenManager({
+  syncTabs: false,
+});
+```
+
+Sync is always disabled automatically when using `memory` storage, since there is no shared state between tabs.
+
+### Custom channel name
+
+If your application creates multiple `TokenManager` instances (e.g. separate user and admin sessions), give each one a unique channel name to prevent cross-talk:
+
+```ts
+const userAuth = createTokenManager({
+  syncChannelName: 'tokensmith:user',
+});
+
+const adminAuth = createTokenManager({
+  syncChannelName: 'tokensmith:admin',
+});
+```
+
+The default channel name is `'tokensmith'`.
+
 ## Auto-Refresh
 
 ### Endpoint protocol
@@ -355,19 +429,24 @@ const auth = createTokenManager({
 
     buffer: 60,       // refresh 60s before expiry (default: 60)
     maxRetries: 3,    // retry attempts on failure (default: 3)
-    retryDelay: 1000, // base delay in ms; doubles each attempt (default: 1000)
+    retryDelay: 1000, // base delay in ms; exponential backoff with jitter (default: 1000)
     headers: {        // extra headers sent with every refresh request
       'x-client-id': 'my-app',
     },
+    fetchOptions: {   // extra RequestInit options (credentials, cache, etc.)
+      credentials: 'include',
+    },
   },
   onAuthFailure: () => {
-    // Called once all retries are exhausted
+    // Called when a refresh fails for any reason (retries exhausted, 401/403, no refresh token)
     window.location.href = '/login';
   },
 });
 ```
 
 `getAccessToken()` and `createAuthFetch()` both trigger an on-demand refresh if the access token is expired. Concurrent callers share one refresh request — the underlying function is called exactly once regardless of how many callers are waiting.
+
+Retry backoff uses exponential delay with random jitter to prevent synchronized retry storms across tabs. If the refresh endpoint returns **401** or **403**, retries are skipped entirely — the token has been rejected and retrying will never succeed. `onAuthFailure` fires immediately in this case.
 
 Auto-refresh is offline-aware: if `navigator.onLine` is `false`, the retry is deferred until the `online` event fires rather than burning through retry attempts.
 
@@ -423,7 +502,7 @@ TokenSmith exports typed error classes for every failure mode:
 |-------|------|-------------|
 | `TokenSmithError` | — | Base class; all errors extend this |
 | `InvalidTokenError` | `INVALID_TOKEN` | Malformed JWT — wrong segment count, invalid base64, or non-JSON payload |
-| `TokenExpiredError` | `TOKEN_EXPIRED` | Token is past its `exp` claim |
+| `TokenExpiredError` | `TOKEN_EXPIRED` | Not thrown internally — exported for use in custom refresh handlers or storage adapters |
 | `RefreshFailedError` | `REFRESH_FAILED` | All retry attempts exhausted; has an `attempts: number` property |
 | `StorageError` | `STORAGE_ERROR` | Storage unavailable (SSR context, quota exceeded, private browsing) |
 | `NetworkError` | `NETWORK_ERROR` | Network request failed |
@@ -474,9 +553,9 @@ const auth = createTokenManager({
 });
 ```
 
-- **Access token** — lives only in memory; page XSS cannot read it
+- **Access token** — lives only in memory; XSS cannot read it from storage
 - **Refresh token** — a server-set HttpOnly cookie; invisible to JavaScript entirely
-- **On page reload** — the refresh handler runs automatically; the session is silently restored without any token being stored in script-accessible storage
+- **On page reload** — memory is empty, so the consumer must bootstrap the session on mount (e.g. call the refresh endpoint directly and pass the result to `setTokens`). No token is ever stored in script-accessible storage
 
 ## Compatibility
 
