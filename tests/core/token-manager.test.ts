@@ -550,6 +550,88 @@ describe('TokenManager', () => {
     });
   });
 
+  describe('syncTabs: false', () => {
+    it('does not notify listeners on visibilitychange when another tab wrote a valid token to shared storage', () => {
+      // Simulate: storage already has a valid token (written by "another tab")
+      // before this manager is created (started unauthenticated).
+      const storage = new MemoryStorageAdapter();
+      const auth = createTokenManager({ storage, syncTabs: false });
+      const listener = vi.fn();
+      auth.onAuthChange(listener);
+
+      // Another tab writes a token directly into shared storage.
+      storage.set('tk_access', createTestJwt({}, 3600));
+
+      // Tab regains focus — should NOT pick up the foreign token.
+      document.dispatchEvent(new Event('visibilitychange'));
+
+      expect(listener).not.toHaveBeenCalled();
+      auth.destroy();
+    });
+
+    it('still triggers a refresh on visibilitychange when this tab own token is expired', async () => {
+      const newToken = createTestJwt({}, 3600);
+      const handler = vi.fn().mockResolvedValueOnce({ accessToken: newToken });
+      const storage = new MemoryStorageAdapter();
+      storage.set('tk_access', createTestJwt({}, -1));
+      storage.set('tk_refresh', 'rt');
+      const auth = createTokenManager({
+        storage,
+        syncTabs: false,
+        refresh: { handler },
+      });
+
+      document.dispatchEvent(new Event('visibilitychange'));
+
+      await vi.waitFor(() => {
+        expect(storage.get('tk_access')).toBe(newToken);
+      });
+      expect(handler).toHaveBeenCalledTimes(1);
+      auth.destroy();
+    });
+
+    it('does not logout when the scheduled refresh fires after another tab cleared shared storage', async () => {
+      vi.useFakeTimers();
+      vi.setSystemTime(new Date('2026-01-01T00:00:00.000Z'));
+
+      const handler = vi.fn();
+      const onAuthFailure = vi.fn();
+      const sharedStorage = new MemoryStorageAdapter();
+
+      // Tab B: created with tokens already in shared storage (simulates
+      // duplicating a tab that was already logged in).
+      const token = createTestJwt({}, 120); // 120 s TTL
+      sharedStorage.set('tk_access', token);
+      sharedStorage.set('tk_refresh', 'rt');
+      const tabB = createTokenManager({
+        storage: sharedStorage,
+        syncTabs: false,
+        refresh: { handler, buffer: 60 },
+        onAuthFailure,
+      });
+
+      const listener = vi.fn();
+      tabB.onAuthChange(listener);
+
+      // Tab A logs out — clears shared storage directly.
+      sharedStorage.clear();
+
+      // Advance past the scheduled refresh (120 − 60 = 60 s).
+      await vi.advanceTimersByTimeAsync(60_000);
+
+      // The refresh handler should NOT have been called (stale timer skipped).
+      expect(handler).not.toHaveBeenCalled();
+      // Tab B should still report authenticated (stale state — that's the
+      // contract of syncTabs: false).
+      expect(tabB.getState().isAuthenticated).toBe(true);
+      expect(listener).not.toHaveBeenCalled();
+      expect(onAuthFailure).not.toHaveBeenCalled();
+
+      tabB.destroy();
+      vi.useRealTimers();
+    });
+  });
+
   describe('updateState shallow equality', () => {
     it('does not notify listeners when logout is called on an already-unauthenticated manager', () => {
       const auth = createTokenManager({ storage: 'memory' });

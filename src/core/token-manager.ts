@@ -72,8 +72,12 @@ export class TokenManagerImpl<TUser = Record<string, unknown>>
             this.refreshManager !== null
           ) {
             this.refreshManager.forceRefresh().catch(() => {});
+          } else if (config.syncTabs !== false) {
+            // Only reconcile state from shared storage when tab sync is enabled.
+            // With syncTabs: false the visibility handler must not propagate
+            // tokens written by other tabs into this instance's state.
+            this.updateState();
           }
-          this.updateState();
         }
       };
       document.addEventListener('visibilitychange', this.visibilityHandler);

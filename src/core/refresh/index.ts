@@ -1,4 +1,4 @@
-import { REFRESH_KEY } from '../constants';
+import { ACCESS_KEY, REFRESH_KEY } from '../constants';
 import { NetworkError, RefreshFailedError } from '../errors';
 import { getTimeUntilExpiry } from '../jwt/validate';
 import type { RefreshConfig, StorageAdapter, TokenPair } from '../types';
@@ -37,6 +37,11 @@ export class RefreshManager {
     if (!Number.isFinite(timeUntilExpiry)) return;
     const delay = Math.max(0, (timeUntilExpiry - buffer) * 1000);
     this.timer = setTimeout(() => {
+      // If the access token in storage no longer matches the token this timer
+      // was scheduled for, another tab (or action) modified shared storage.
+      // Skip this stale refresh — the current token already has (or will get)
+      // its own schedule.
+      if (this.storage.get(ACCESS_KEY) !== accessToken) return;
       this.forceRefresh()
         .finally(() => this.onSettled?.())
         .catch(() => {});

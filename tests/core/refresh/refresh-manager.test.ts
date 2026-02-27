@@ -342,7 +342,9 @@ describe('RefreshManager', () => {
         vi.fn()
       );
 
-      manager.scheduleRefresh(createTestJwt({}, 120));
+      const token = createTestJwt({}, 120);
+      storage.set('tk_access', token);
+      manager.scheduleRefresh(token);
 
       await vi.advanceTimersByTimeAsync(59_999);
       expect(onRefresh).not.toHaveBeenCalled();
@@ -385,7 +387,9 @@ describe('RefreshManager', () => {
       );
 
       manager.scheduleRefresh(createTestJwt({}, 60));
-      manager.scheduleRefresh(createTestJwt({}, 90));
+      const token2 = createTestJwt({}, 90);
+      storage.set('tk_access', token2);
+      manager.scheduleRefresh(token2);
 
       await vi.advanceTimersByTimeAsync(60_001);
       expect(onRefresh).not.toHaveBeenCalled();
