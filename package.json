@@ -44,7 +44,9 @@
   "types": "./dist/index.d.ts",
   "typesVersions": {
     "*": {
-      "react": ["./dist/react.d.ts"]
+      "react": [
+        "./dist/react.d.ts"
+      ]
     }
   },
   "files": [
@@ -74,6 +76,8 @@
   },
   "devDependencies": {
     "@biomejs/biome": "2.4.2",
+    "@changesets/changelog-github": "^0.5.2",
+    "@changesets/cli": "^2.29.8",
     "@testing-library/react": "^16.3.2",
     "@types/react": "^19.2.14",
     "@vitest/coverage-v8": "^4.0.18",
@@ -93,6 +97,9 @@
     "lint": "biome check src/ tests/",
     "lint:fix": "biome check --write src/ tests/",
     "format": "biome format --write src/ tests/",
-    "prepublishOnly": "npm run typecheck && npm run lint && npm run test && npm run build"
+    "prepublishOnly": "npm run typecheck && npm run lint && npm run test && npm run build",
+    "changeset": "changeset",
+    "version-packages": "changeset version",
+    "release": "changeset publish"
   }
 }
