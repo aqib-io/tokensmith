@@ -1,22 +1,33 @@
 # Contributing to TokenSmith
 
-Thank you for taking the time to contribute. This document covers everything you need to get started.
+Thank you for taking the time to contribute. When it comes to open source, there are different ways you can contribute, all of which are valuable. This document covers everything you need to get started.
+
+## Before You Start
+
+Before working on a contribution, [open an issue](https://github.com/aqib-io/tokensmith/issues) describing what you want to build or fix. It's possible someone else is already working on something similar, or there may be a reason that feature isn't implemented yet. The maintainers will point you in the right direction.
+
+This step is optional for small bug fixes or documentation improvements.
 
 ## Table of Contents
 
 - [Getting Started](#getting-started)
 - [Development Commands](#development-commands)
 - [Code Style](#code-style)
+- [Versioning (Changesets)](#versioning-changesets)
 - [Pull Request Process](#pull-request-process)
 - [Reporting Bugs](#reporting-bugs)
 - [Feature Requests](#feature-requests)
+- [License](#license)
 
 ## Getting Started
 
 **Requirements:** Node.js 18+ and npm.
 
+1. Fork this repo on GitHub.
+2. Clone your fork and install dependencies:
+
 ```bash
-git clone https://github.com/aqib-io/tokensmith.git
+git clone git@github.com:{your_username}/tokensmith.git
 cd tokensmith
 npm install
 ```
@@ -54,6 +65,31 @@ TokenSmith is written in strict TypeScript. The following rules apply to all cod
 - **Biome formatting** — single quotes, 2-space indent, LF line endings, trailing commas where valid in ES5. Run `npm run lint:fix` or `npm run format` to auto-apply.
 - **No dependencies** — TokenSmith ships zero runtime dependencies. Do not add any. Browser APIs and TypeScript's standard library are fine.
 - **SSR safety** — any access to `document`, `window`, `localStorage`, or `BroadcastChannel` must be guarded against `undefined` (server environments lack these globals).
+
+## Versioning (Changesets)
+
+TokenSmith uses [Changesets](https://github.com/changesets/changesets) to manage versioning, changelogs, and npm publishing. **You do not need to edit `package.json` version or `CHANGELOG.md` by hand.**
+
+After making your code changes, run:
+
+```bash
+npx changeset
+```
+
+Follow the prompts:
+
+1. **Semver bump** — `patch` for bug fixes, `minor` for new features, `major` for breaking changes.
+2. **Summary** — a short description of the change (this becomes the changelog entry).
+
+This creates a markdown file in `.changeset/`. Commit it alongside your code changes.
+
+**What happens after your PR is merged:**
+
+1. A GitHub Action detects the changeset and opens a "Version Packages" PR.
+2. That PR bumps `package.json`, updates `CHANGELOG.md`, and deletes consumed changeset files.
+3. When a maintainer merges the Version PR, the package is automatically published to npm and a GitHub Release is created.
+
+If your PR does not change public-facing behavior (e.g. internal refactoring, tests, CI fixes), you can skip the changeset — the CI bot will remind you if one is expected.
 
 ## Pull Request Process
 
@@ -115,3 +151,7 @@ When opening a new request, describe:
 3. Whether it could be solved with the existing `StorageAdapter` interface or a custom `refresh.handler`.
 
 TokenSmith intentionally ships zero dependencies and a minimal API surface. Features that require new dependencies, break the existing interface, or belong to a specific framework adapter (Vue, Svelte, etc.) are unlikely to be accepted in the core package — but may be a good fit as a separate community package.
+
+## License
+
+By contributing your code to the TokenSmith GitHub repository, you agree to license your contribution under the [MIT license](./LICENSE).
