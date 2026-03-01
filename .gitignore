@@ -35,6 +35,9 @@ Thumbs.db
 # Secrets
 .npmrc
 
+# Internal docs (local only)
+RELEASE.md
+
 # Implementation planning files
 plan.md
 research.md
