@@ -21,8 +21,10 @@ Every app using JWTs ends up writing the same client-side logic: store tokens se
 - [What TokenSmith replaces](#what-tokensmith-replaces)
 - [Quick Start](#quick-start)
 - [React](#react)
+- [Vue](#vue)
 - [Core API](#core-api)
 - [React API](#react-api)
+- [Vue API](#vue-api)
 - [Configuration](#configuration)
 - [Storage Backends](#storage-backends)
 - [Cross-Tab Sync](#cross-tab-sync)
@@ -43,7 +45,7 @@ Every app using JWTs ends up writing the same client-side logic: store tokens se
 - **Zero boilerplate** — one `createTokenManager()` call replaces hundreds of lines of manual token handling written fresh for every project
 - **Auto-refresh that just works** — tokens refresh before expiry; concurrent callers share one request, no matter how many
 - **Cross-tab sync** — logout in one tab logs out all tabs instantly via `BroadcastChannel`, with automatic `localStorage` fallback
-- **React-ready** — `useSyncExternalStore`-backed `useAuth()` hook; concurrent-mode safe, no extra renders, no tearing
+- **React & Vue-ready** — React `useAuth()` via `useSyncExternalStore`; Vue `useAuth()` via `ref()` + `onScopeDispose`; both concurrent-safe with zero extra renders
 - **Zero dependencies** — no supply chain risk; tree-shakeable ESM + CJS; cookie storage with `SameSite=Strict; Secure` by default; ~5 KB gzipped
 
 ## Install
@@ -52,7 +54,7 @@ Every app using JWTs ends up writing the same client-side logic: store tokens se
 npm install tokensmith
 ```
 
-The React adapter ships in the same package — no separate install needed.
+The React and Vue adapters ship in the same package — no separate install needed.
 
 ## What TokenSmith replaces
 
@@ -155,6 +157,32 @@ function ProtectedRoute({ children }: { children: React.ReactNode }) {
   const { isAuthenticated } = useAuth();
   return isAuthenticated ? <>{children}</> : <Navigate to="/login" replace />;
 }
+```
+
+## Vue
+
+```ts
+import { createApp } from 'vue';
+import { createTokenManager } from 'tokensmith';
+import { createTokenSmithPlugin } from 'tokensmith/vue';
+
+// Create once at module scope
+const auth = createTokenManager({
+  refresh: { endpoint: '/api/auth/refresh' },
+});
+
+// Install the plugin in your app entry
+const app = createApp(App);
+app.use(createTokenSmithPlugin(auth));
+app.mount('#app');
+```
+
+```ts
+// Any component — use the composable
+import { useAuth } from 'tokensmith/vue';
+
+const { state, logout } = useAuth();
+// state.value.isAuthenticated, state.value.user, etc.
 ```
 
 ## Core API
@@ -278,6 +306,44 @@ Backed by `useSyncExternalStore` — concurrent-mode safe, no tearing, no extra 
 ### `useTokenManager<TUser>()`
 
 Returns the raw `TokenManager` instance from context. Use this to build custom hooks on top of TokenSmith.
+
+```ts
+const manager = useTokenManager();
+const authFetch = manager.createAuthFetch();
+```
+
+## Vue API
+
+### `createTokenSmithPlugin(manager)`
+
+Returns a Vue plugin that provides the `TokenManager` to the component tree via `provide/inject`.
+
+```ts
+import { createApp } from 'vue';
+import { createTokenSmithPlugin } from 'tokensmith/vue';
+
+const app = createApp(App);
+app.use(createTokenSmithPlugin(auth));
+```
+
+### `useAuth<TUser>()`
+
+```ts
+const { state, getAccessToken, logout } = useAuth<UserPayload>();
+
+// Reactive state — access via .value
+state.value.isAuthenticated; // boolean
+state.value.user;            // TUser | null
+state.value.accessToken;     // string | null
+state.value.isRefreshing;    // boolean
+state.value.error;           // TokenSmithError | null
+```
+
+Returns a `DeepReadonly<Ref<AuthState<TUser>>>` — fully reactive, updates automatically on login, logout, refresh, and cross-tab sync.
+
+### `useTokenManager<TUser>()`
+
+Returns the raw `TokenManager` instance from the plugin. Use this to build custom composables on top of TokenSmith.
 
 ```ts
 const manager = useTokenManager();
@@ -494,6 +560,13 @@ In React:
 const { user } = useAuth<UserPayload>(); // user: UserPayload | null
 ```
 
+In Vue:
+
+```ts
+const { state } = useAuth<UserPayload>();
+state.value.user; // UserPayload | null
+```
+
 ## Errors
 
 TokenSmith exports typed error classes for every failure mode:
@@ -564,6 +637,7 @@ const auth = createTokenManager({
 | Browsers | Chrome 80+, Firefox 80+, Safari 15+, Edge 80+ |
 | Node.js | 18+ (SSR contexts) |
 | React | 18+ (`useSyncExternalStore`) |
+| Vue | 3.3+ (`ref`, `inject`, `onScopeDispose`) |
 | TypeScript | 5.0+ |
 | Module formats | ESM + CommonJS |
 
@@ -575,6 +649,7 @@ Cross-tab sync uses `BroadcastChannel`. In environments where it is unavailable,
 |-------|---------|
 | `tokensmith` | ~5 KB |
 | `tokensmith/react` | <1 KB |
+| `tokensmith/vue` | <1 KB |
 
 Zero runtime dependencies. The React adapter wraps React's built-in `useSyncExternalStore` — no extra runtime code.
 
@@ -585,9 +660,10 @@ The [`examples/`](./examples) directory contains a complete full-stack demo:
 | App | Stack | What it shows |
 |-----|-------|---------------|
 | [`react-app`](./examples/react-app) | Vite + React 19 + React Router | Login, protected routes, auto-refresh countdown, cross-tab sync |
+| [`vue-app`](./examples/vue-app) | Vite + Vue 3 + Vue Router | Login, navigation guards, auto-refresh countdown, cross-tab sync |
 | [`nestjs-api`](./examples/nestjs-api) | NestJS 11 + Passport/JWT | Auth API: `/auth/login`, `/auth/refresh`, `/auth/profile` |
 
-The React example demonstrates a **hybrid storage adapter** — access token kept in memory (never touches disk), refresh token persisted in `localStorage` — alongside how to perform a silent refresh on page load to restore the session without an authenticated flash.
+Both frontend examples demonstrate a **hybrid storage adapter** — access token kept in memory (never touches disk), refresh token persisted in `localStorage` — alongside how to perform a silent refresh on page load to restore the session without an authenticated flash.
 
 ## Changelog
 
