@@ -40,6 +40,16 @@
           }
         }
       }
+    },
+    {
+      "includes": ["tests/vue/**"],
+      "linter": {
+        "rules": {
+          "correctness": {
+            "useHookAtTopLevel": "off"
+          }
+        }
+      }
     }
   ]
 }

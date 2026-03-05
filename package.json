@@ -13,7 +13,8 @@
     "refresh-token",
     "oauth",
     "access-token",
-    "token-management"
+    "token-management",
+    "vue"
   ],
   "type": "module",
   "exports": {
@@ -37,6 +38,16 @@
         "default": "./dist/react.cjs"
       }
     },
+    "./vue": {
+      "import": {
+        "types": "./dist/vue.d.ts",
+        "default": "./dist/vue.js"
+      },
+      "require": {
+        "types": "./dist/vue.d.cts",
+        "default": "./dist/vue.cjs"
+      }
+    },
     "./package.json": "./package.json"
   },
   "main": "./dist/index.cjs",
@@ -46,6 +57,9 @@
     "*": {
       "react": [
         "./dist/react.d.ts"
+      ],
+      "vue": [
+        "./dist/vue.d.ts"
       ]
     }
   },
@@ -55,10 +69,14 @@
   ],
   "sideEffects": false,
   "peerDependencies": {
-    "react": ">=18.0.0"
+    "react": ">=18.0.0",
+    "vue": ">=3.3.0"
   },
   "peerDependenciesMeta": {
     "react": {
+      "optional": true
+    },
+    "vue": {
       "optional": true
     }
   },
@@ -81,12 +99,14 @@
     "@testing-library/react": "^16.3.2",
     "@types/react": "^19.2.14",
     "@vitest/coverage-v8": "^4.0.18",
+    "@vue/test-utils": "^2.4.6",
     "jsdom": "^26.1.0",
     "react": "^19.2.4",
     "react-dom": "^19.2.4",
     "tsup": "^8.5.1",
     "typescript": "~5.9.3",
-    "vitest": "^4.0.18"
+    "vitest": "^4.0.18",
+    "vue": "^3.5.29"
   },
   "scripts": {
     "build": "tsup",
