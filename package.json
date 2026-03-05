@@ -1,6 +1,6 @@
 {
   "name": "tokensmith",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "Framework-agnostic JWT token management — storage, auto-refresh, cross-tab sync, and reactive auth state",
   "license": "MIT",
   "keywords": [

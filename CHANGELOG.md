@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.2.0
+
+### Minor Changes
+
+- [#4](https://github.com/aqib-io/tokensmith/pull/4) [`ac689f1`](https://github.com/aqib-io/tokensmith/commit/ac689f14dd1da83482f2a3deb39dae43404b51c3) Thanks [@aqib-io](https://github.com/aqib-io)! - Add Vue 3 adapter (`tokensmith/vue`) with `createTokenSmithPlugin`, `useAuth`, and `useTokenManager`
+
 All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
